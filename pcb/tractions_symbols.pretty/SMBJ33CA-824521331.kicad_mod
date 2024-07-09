@@ -1,0 +1,129 @@
+(footprint "SMBJ33CA-824521331"
+	(version 20240108)
+	(generator "pcbnew")
+	(generator_version "8.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at -0.05 -2.49 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "6046275e-9ab5-4e34-b38d-fbe1aae3a17b")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "SMBJ33CA-824521331"
+		(at -0.08 5.2 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "73f7d028-d520-47a7-b46a-5fc94b6c0b80")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Footprint" "SMBJ33CA-824521331"
+		(at 0.06 3.14 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "b8b297ee-8a57-4fe3-9ed5-f0c9f5720080")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at -0.08 4.2 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "3d103387-3ba3-40c9-8528-a7fec36133f8")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at -0.08 4.2 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "dea7c8c6-6f11-4a60-a9a4-f6506b6a74dc")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_line
+		(start -1 -1.5)
+		(end 1 -1.5)
+		(stroke
+			(width 0.2)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "8d86fb62-29df-4c97-ba41-40aa8def4936")
+	)
+	(fp_line
+		(start -1 1.5)
+		(end 1 1.5)
+		(stroke
+			(width 0.2)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "468157f9-88fe-4c38-81dc-198c2daee7df")
+	)
+	(fp_text user "${REFERENCE}"
+		(at -0.08 6.7 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "70313d34-ba33-4753-856f-4b0c5e36b265")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd roundrect
+		(at -2.25 0)
+		(size 2.3 2.3)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(roundrect_rratio 0.25)
+		(thermal_bridge_angle 45)
+		(uuid "fcc5034c-685d-40bb-848b-b30d97e37801")
+	)
+	(pad "2" smd roundrect
+		(at 2.25 0)
+		(size 2.3 2.3)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(roundrect_rratio 0.25)
+		(thermal_bridge_angle 45)
+		(uuid "e5eb3366-a18f-40f4-8c51-ae7c29439505")
+	)
+	(model "${KIPRJMOD}/3d/Download_STP_WE-TVSP-DO-214AA-Bidirectional (rev1).stp"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz -90 0 0)
+		)
+	)
+)

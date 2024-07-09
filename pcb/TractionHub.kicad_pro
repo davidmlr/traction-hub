@@ -426,8 +426,12 @@
     }
   },
   "libraries": {
-    "pinned_footprint_libs": [],
-    "pinned_symbol_libs": []
+    "pinned_footprint_libs": [
+      "tractions_symbols"
+    ],
+    "pinned_symbol_libs": [
+      "traction_symbols"
+    ]
   },
   "meta": {
     "filename": "TractionHub.kicad_pro",

@@ -175,7 +175,7 @@
 			)
 		)
 		(property "Description" "STMicroelectronics LDFPVR, LDO Voltage Regulator, Adjustable 1A, 0.8  12 V +/-1.5%, 6-Pin DFN"
-			(at 10.922 -32.766 0)
+			(at 17.78 -32.766 0)
 			(effects
 				(font
 					(size 1.27 1.27)
