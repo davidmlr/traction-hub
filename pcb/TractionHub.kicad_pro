@@ -415,7 +415,7 @@
       "no_connect_dangling": "warning",
       "pin_not_connected": "error",
       "pin_not_driven": "error",
-      "pin_to_pin": "warning",
+      "pin_to_pin": "error",
       "power_pin_not_driven": "error",
       "similar_labels": "warning",
       "simulation_model_issue": "ignore",
@@ -588,6 +588,14 @@
     [
       "9047ab23-e23f-4784-8a52-b3b8ed07a438",
       "microcontroller"
+    ],
+    [
+      "719415c5-d6e9-448b-8019-6ea161a5efc2",
+      "mosfet_driver"
+    ],
+    [
+      "f76165b7-3c99-486c-851a-646caa46e12a",
+      "bridge"
     ]
   ],
   "text_variables": {}
