@@ -126,7 +126,7 @@
 				)
 			)
 		)
-		(symbol "Simulation_SPICE:NMOS"
+		(symbol "NMOS_1"
 			(pin_numbers hide)
 			(pin_names
 				(offset 0)
@@ -134,8 +134,8 @@
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
-			(property "Reference" "Q"
-				(at 5.08 1.27 0)
+			(property "Reference" "Q1"
+				(at -3.302 3.81 0)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -143,8 +143,8 @@
 					(justify left)
 				)
 			)
-			(property "Value" "NMOS"
-				(at 5.08 -1.27 0)
+			(property "Value" "IRFR7540TRPBF"
+				(at 6.35 -7.366 90)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -152,7 +152,7 @@
 					(justify left)
 				)
 			)
-			(property "Footprint" ""
+			(property "Footprint" "Package_TO_SOT_SMD:TO-252-2"
 				(at 5.08 2.54 0)
 				(effects
 					(font
@@ -161,7 +161,7 @@
 					(hide yes)
 				)
 			)
-			(property "Datasheet" "https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#cha_MOSFETs"
+			(property "Datasheet" "https://www.mouser.de/datasheet/2/196/Infineon_IRFR7540_DataSheet_v01_01_EN-3363300.pdf"
 				(at 0 -12.7 0)
 				(effects
 					(font
@@ -215,7 +215,7 @@
 					(hide yes)
 				)
 			)
-			(symbol "NMOS_0_1"
+			(symbol "NMOS_1_0_1"
 				(polyline
 					(pts
 						(xy 0.254 0) (xy -2.54 0)
@@ -382,11 +382,11 @@
 					)
 				)
 			)
-			(symbol "NMOS_1_1"
-				(pin passive line
-					(at 2.54 5.08 270)
+			(symbol "NMOS_1_1_1"
+				(pin input line
+					(at -5.08 0 0)
 					(length 2.54)
-					(name "D"
+					(name "G"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -401,10 +401,10 @@
 						)
 					)
 				)
-				(pin input line
-					(at -5.08 0 0)
+				(pin passive line
+					(at 2.54 5.08 270)
 					(length 2.54)
-					(name "G"
+					(name "D"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1417,105 +1417,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Simulation_SPICE:NMOS")
-		(at 148.59 96.52 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "1f45925d-e8b8-4001-b8c2-2c096beb1c8e")
-		(property "Reference" "Q4"
-			(at 145.542 92.202 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "IRFR7540TRPBF"
-			(at 155.448 104.14 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Package_TO_SOT_SMD:TO-252-2"
-			(at 153.67 93.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://www.mouser.de/datasheet/2/196/Infineon_IRFR7540_DataSheet_v01_01_EN-3363300.pdf"
-			(at 148.59 109.22 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "N-MOSFET transistor, drain/source/gate"
-			(at 148.59 96.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Device" "NMOS"
-			(at 148.59 113.665 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" "VDMOS"
-			(at 148.59 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Pins" "1=D 2=G 3=S"
-			(at 148.59 111.76 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "6662d01a-88d9-42c4-9efb-415ccd4a6e0d")
-		)
-		(pin "3"
-			(uuid "dd2bd4d0-87ea-4e21-98c9-1b1bddaee7d0")
-		)
-		(pin "1"
-			(uuid "85038015-ad72-4bff-b263-0205c3a5be98")
-		)
-		(instances
-			(project "TractionHub"
-				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
-					(reference "Q4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
+		(lib_name "NMOS_1")
 		(lib_id "Simulation_SPICE:NMOS")
 		(at 115.57 73.66 0)
 		(unit 1)
@@ -1615,16 +1517,17 @@
 		)
 	)
 	(symbol
+		(lib_name "NMOS_1")
 		(lib_id "Simulation_SPICE:NMOS")
-		(at 115.57 96.52 0)
+		(at 148.59 73.66 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "2e1e3bc5-373b-40cd-8705-6747679ed713")
-		(property "Reference" "Q2"
-			(at 112.776 92.71 0)
+		(uuid "378063b5-1aa0-4fb9-bc78-23c6b4bb5b17")
+		(property "Reference" "Q3"
+			(at 145.288 69.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1633,7 +1536,7 @@
 			)
 		)
 		(property "Value" "IRFR7540TRPBF"
-			(at 122.428 104.14 90)
+			(at 154.94 81.026 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1642,7 +1545,7 @@
 			)
 		)
 		(property "Footprint" "Package_TO_SOT_SMD:TO-252-2"
-			(at 120.65 93.98 0)
+			(at 153.67 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1651,7 +1554,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.mouser.de/datasheet/2/196/Infineon_IRFR7540_DataSheet_v01_01_EN-3363300.pdf"
-			(at 115.57 109.22 0)
+			(at 148.59 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1660,7 +1563,7 @@
 			)
 		)
 		(property "Description" "N-MOSFET transistor, drain/source/gate"
-			(at 115.57 96.52 0)
+			(at 148.59 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1669,7 +1572,7 @@
 			)
 		)
 		(property "Sim.Device" "NMOS"
-			(at 115.57 113.665 0)
+			(at 148.59 90.805 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1678,7 +1581,7 @@
 			)
 		)
 		(property "Sim.Type" "VDMOS"
-			(at 115.57 115.57 0)
+			(at 148.59 92.71 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1687,7 +1590,7 @@
 			)
 		)
 		(property "Sim.Pins" "1=D 2=G 3=S"
-			(at 115.57 111.76 0)
+			(at 148.59 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1696,18 +1599,18 @@
 			)
 		)
 		(pin "2"
-			(uuid "be786889-25f1-4093-9e14-083031bc7244")
+			(uuid "614c26fd-56a6-404a-bd24-804fc8f2ed92")
 		)
 		(pin "3"
-			(uuid "13667268-8a71-4e3b-a4e8-7553b1a290bc")
+			(uuid "620ff356-a252-41d1-bf01-ed3684ea461e")
 		)
 		(pin "1"
-			(uuid "ebce7874-19b8-4737-ad54-97be121f4067")
+			(uuid "06015c72-ce5d-4c70-9347-b333108bc728")
 		)
 		(instances
 			(project "TractionHub"
 				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
-					(reference "Q2")
+					(reference "Q3")
 					(unit 1)
 				)
 			)
@@ -1781,6 +1684,106 @@
 		)
 	)
 	(symbol
+		(lib_name "NMOS_1")
+		(lib_id "Simulation_SPICE:NMOS")
+		(at 180.34 73.66 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "59c45fcd-f988-400a-908c-bd6c627c0baa")
+		(property "Reference" "Q5"
+			(at 177.038 69.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "IRFR7540TRPBF"
+			(at 186.69 81.026 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Package_TO_SOT_SMD:TO-252-2"
+			(at 185.42 71.12 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://www.mouser.de/datasheet/2/196/Infineon_IRFR7540_DataSheet_v01_01_EN-3363300.pdf"
+			(at 180.34 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "N-MOSFET transistor, drain/source/gate"
+			(at 180.34 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Device" "NMOS"
+			(at 180.34 90.805 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Type" "VDMOS"
+			(at 180.34 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Pins" "1=D 2=G 3=S"
+			(at 180.34 88.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "608e5603-7e47-4141-8c22-6e79fd91d6ec")
+		)
+		(pin "3"
+			(uuid "3a5f4245-ab11-4aa2-befa-9899b2e59104")
+		)
+		(pin "1"
+			(uuid "98b01f0d-413d-4a2d-86bf-1204d8af281e")
+		)
+		(instances
+			(project "TractionHub"
+				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
+					(reference "Q5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R")
 		(at 170.18 73.66 90)
 		(unit 1)
@@ -1842,6 +1845,106 @@
 			(project "TractionHub"
 				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
 					(reference "R22")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "NMOS_1")
+		(lib_id "Simulation_SPICE:NMOS")
+		(at 148.59 96.52 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "691ad93f-7b63-4390-b694-32786e54f188")
+		(property "Reference" "Q4"
+			(at 145.288 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "IRFR7540TRPBF"
+			(at 154.94 103.886 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Package_TO_SOT_SMD:TO-252-2"
+			(at 153.67 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://www.mouser.de/datasheet/2/196/Infineon_IRFR7540_DataSheet_v01_01_EN-3363300.pdf"
+			(at 148.59 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "N-MOSFET transistor, drain/source/gate"
+			(at 148.59 96.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Device" "NMOS"
+			(at 148.59 113.665 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Type" "VDMOS"
+			(at 148.59 115.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Pins" "1=D 2=G 3=S"
+			(at 148.59 111.76 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "de6b6f4e-7b4c-4edf-a07c-53d4fc6edbcd")
+		)
+		(pin "3"
+			(uuid "e7d6d918-ed46-45ba-a552-b53771bcce10")
+		)
+		(pin "1"
+			(uuid "6720a34f-9683-4266-903c-ead364979f96")
+		)
+		(instances
+			(project "TractionHub"
+				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
+					(reference "Q4")
 					(unit 1)
 				)
 			)
@@ -1982,83 +2085,17 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R")
-		(at 168.91 96.52 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "abc1d748-5667-4446-b277-9fb959e51f5b")
-		(property "Reference" "R25"
-			(at 168.91 99.06 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "4R7"
-			(at 168.91 96.52 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
-			(at 168.91 98.298 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 168.91 96.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor"
-			(at 168.91 96.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "6fe0db4a-67bb-4811-a285-003efa88a8b3")
-		)
-		(pin "2"
-			(uuid "405f077a-e4de-4a41-a7e8-8b64323c8b3a")
-		)
-		(instances
-			(project "TractionHub"
-				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
-					(reference "R25")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
+		(lib_name "NMOS_1")
 		(lib_id "Simulation_SPICE:NMOS")
-		(at 148.59 73.66 0)
+		(at 115.57 96.52 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "ad0898b7-b2df-48ff-a0eb-4add220c241d")
-		(property "Reference" "Q3"
-			(at 145.034 69.596 0)
+		(uuid "78272224-381f-4d31-8ce1-7672789034f6")
+		(property "Reference" "Q2"
+			(at 112.268 92.71 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2067,7 +2104,7 @@
 			)
 		)
 		(property "Value" "IRFR7540TRPBF"
-			(at 155.448 81.28 90)
+			(at 121.92 103.886 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2076,7 +2113,7 @@
 			)
 		)
 		(property "Footprint" "Package_TO_SOT_SMD:TO-252-2"
-			(at 153.67 71.12 0)
+			(at 120.65 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2085,7 +2122,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.mouser.de/datasheet/2/196/Infineon_IRFR7540_DataSheet_v01_01_EN-3363300.pdf"
-			(at 148.59 86.36 0)
+			(at 115.57 109.22 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2094,7 +2131,7 @@
 			)
 		)
 		(property "Description" "N-MOSFET transistor, drain/source/gate"
-			(at 148.59 73.66 0)
+			(at 115.57 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2103,7 +2140,7 @@
 			)
 		)
 		(property "Sim.Device" "NMOS"
-			(at 148.59 90.805 0)
+			(at 115.57 113.665 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2112,7 +2149,7 @@
 			)
 		)
 		(property "Sim.Type" "VDMOS"
-			(at 148.59 92.71 0)
+			(at 115.57 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2121,7 +2158,7 @@
 			)
 		)
 		(property "Sim.Pins" "1=D 2=G 3=S"
-			(at 148.59 88.9 0)
+			(at 115.57 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2130,24 +2167,25 @@
 			)
 		)
 		(pin "2"
-			(uuid "ca661a36-aeac-441b-a48d-0d594eceecf1")
+			(uuid "2cef7f65-b024-4838-bcad-a275530536b8")
 		)
 		(pin "3"
-			(uuid "17b3f84a-27d3-4891-add1-87af53305c8a")
+			(uuid "5d819f24-24b0-4c0f-88ee-2d9bc3a517b8")
 		)
 		(pin "1"
-			(uuid "6c06302f-2d84-4fc0-9ca5-0d78e2fd17ad")
+			(uuid "cd7c9939-b017-441b-bfbf-985787a4f9ff")
 		)
 		(instances
 			(project "TractionHub"
 				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
-					(reference "Q3")
+					(reference "Q2")
 					(unit 1)
 				)
 			)
 		)
 	)
 	(symbol
+		(lib_name "NMOS_1")
 		(lib_id "Simulation_SPICE:NMOS")
 		(at 180.34 96.52 0)
 		(unit 1)
@@ -2155,9 +2193,9 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "df514834-bdd7-46e0-97e6-b26d255e8521")
+		(uuid "875543e4-63d3-4453-b065-be7cf3a65c23")
 		(property "Reference" "Q6"
-			(at 177.292 92.202 0)
+			(at 177.038 92.71 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2166,7 +2204,7 @@
 			)
 		)
 		(property "Value" "IRFR7540TRPBF"
-			(at 187.96 104.902 90)
+			(at 186.69 103.886 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2229,18 +2267,85 @@
 			)
 		)
 		(pin "2"
-			(uuid "585db485-4c04-45f7-a13b-b625eecaf748")
+			(uuid "207601f4-4af1-4b19-bf8f-181a7d37c809")
 		)
 		(pin "3"
-			(uuid "34acfee9-d8d2-4081-b159-d9a934396bed")
+			(uuid "dced9220-9958-41ab-bf44-da23c7e13820")
 		)
 		(pin "1"
-			(uuid "af2daf2d-2b60-4fed-ada3-303391db09bf")
+			(uuid "43e4b9e6-33eb-493a-ad05-09ef8a91749b")
 		)
 		(instances
 			(project "TractionHub"
 				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
 					(reference "Q6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 168.91 96.52 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "abc1d748-5667-4446-b277-9fb959e51f5b")
+		(property "Reference" "R25"
+			(at 168.91 99.06 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "4R7"
+			(at 168.91 96.52 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 168.91 98.298 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 168.91 96.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 168.91 96.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "6fe0db4a-67bb-4811-a285-003efa88a8b3")
+		)
+		(pin "2"
+			(uuid "405f077a-e4de-4a41-a7e8-8b64323c8b3a")
+		)
+		(instances
+			(project "TractionHub"
+				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
+					(reference "R25")
 					(unit 1)
 				)
 			)
@@ -2375,105 +2480,6 @@
 			(project "TractionHub"
 				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
 					(reference "R28")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Simulation_SPICE:NMOS")
-		(at 180.34 73.66 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "f1c24e9f-ef01-401d-b0ef-77c2bb3e1c05")
-		(property "Reference" "Q5"
-			(at 176.784 69.85 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "IRFR7540TRPBF"
-			(at 187.452 81.026 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Package_TO_SOT_SMD:TO-252-2"
-			(at 185.42 71.12 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://www.mouser.de/datasheet/2/196/Infineon_IRFR7540_DataSheet_v01_01_EN-3363300.pdf"
-			(at 180.34 86.36 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "N-MOSFET transistor, drain/source/gate"
-			(at 180.34 73.66 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Device" "NMOS"
-			(at 180.34 90.805 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Type" "VDMOS"
-			(at 180.34 92.71 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Pins" "1=D 2=G 3=S"
-			(at 180.34 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "28b6bc9f-752b-4df6-9c11-bcdad23f33ee")
-		)
-		(pin "3"
-			(uuid "8fffec17-37b1-4769-aa87-0d1762183fb7")
-		)
-		(pin "1"
-			(uuid "015de243-da65-45e9-8ad8-ffc51dc0f4d7")
-		)
-		(instances
-			(project "TractionHub"
-				(path "/c6712b71-1d4c-4b1c-822a-6fd97117379c/f76165b7-3c99-486c-851a-646caa46e12a"
-					(reference "Q5")
 					(unit 1)
 				)
 			)
