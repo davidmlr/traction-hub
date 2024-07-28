@@ -2453,6 +2453,16 @@
 	)
 	(wire
 		(pts
+			(xy 209.55 115.57) (xy 212.09 115.57)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "22c79ed7-7179-4234-9d89-7c55bb376c12")
+	)
+	(wire
+		(pts
 			(xy 209.55 133.35) (xy 223.52 133.35)
 		)
 		(stroke
@@ -2603,16 +2613,6 @@
 	)
 	(wire
 		(pts
-			(xy 209.55 115.57) (xy 212.09 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4551796f-9afb-4b32-bbb1-ea4a41831066")
-	)
-	(wire
-		(pts
 			(xy 215.9 123.19) (xy 215.9 125.73)
 		)
 		(stroke
@@ -2620,6 +2620,16 @@
 			(type default)
 		)
 		(uuid "470b7271-3f86-426d-b73a-3229ec13729c")
+	)
+	(wire
+		(pts
+			(xy 209.55 128.27) (xy 223.52 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "498c4760-9fff-43fc-a429-520461116096")
 	)
 	(wire
 		(pts
@@ -2660,16 +2670,6 @@
 			(type default)
 		)
 		(uuid "57374fb8-3377-4400-a38b-9f577c61fb52")
-	)
-	(wire
-		(pts
-			(xy 209.55 120.65) (xy 212.09 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5b2e6f44-691a-431e-8d6f-ef1d4113d15c")
 	)
 	(wire
 		(pts
@@ -2903,13 +2903,13 @@
 	)
 	(wire
 		(pts
-			(xy 209.55 128.27) (xy 223.52 128.27)
+			(xy 209.55 120.65) (xy 212.09 120.65)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "95a684ed-528f-45af-959c-1348256ec6b0")
+		(uuid "9504e156-2b81-4986-8339-f1c92813b988")
 	)
 	(wire
 		(pts
@@ -5643,7 +5643,7 @@
 			(uuid "201e3b1f-352b-43ec-93ad-b0547b320dee")
 		)
 		(pin "SH1_A" input
-			(at 209.55 128.27 0)
+			(at 209.55 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5653,7 +5653,7 @@
 			(uuid "baa6d6a0-3c23-4857-8a30-7e5b4503091c")
 		)
 		(pin "SH2_A" input
-			(at 209.55 120.65 0)
+			(at 209.55 128.27 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5663,7 +5663,7 @@
 			(uuid "b46bdb74-1219-414a-8555-bd28fea98684")
 		)
 		(pin "SH1_B" input
-			(at 209.55 115.57 0)
+			(at 209.55 120.65 0)
 			(effects
 				(font
 					(size 1.27 1.27)

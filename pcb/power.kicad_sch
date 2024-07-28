@@ -2723,7 +2723,7 @@
 				)
 			)
 		)
-		(property "Value" "TC2117-3.3VDBTR "
+		(property "Value" "TC2117-3.3VDBTR"
 			(at 210.82 113.03 0)
 			(effects
 				(font
