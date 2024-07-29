@@ -58,7 +58,24 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "hole_clearance|146450000|64005000|8f6d8c82-8b00-4158-962e-22ba7ba9e462|53ecb133-d436-4b61-9be6-761994a9a707",
+        "hole_clearance|146450000|64005000|8f6d8c82-8b00-4158-962e-22ba7ba9e462|d1944979-c9a4-4269-a805-7f372187badc",
+        "hole_clearance|146950000|64005000|8f6d8c82-8b00-4158-962e-22ba7ba9e462|bf929f32-99d5-49fe-98a8-bcb88abd4204",
+        "hole_clearance|146950000|64005000|8f6d8c82-8b00-4158-962e-22ba7ba9e462|df5b9e84-efff-4f3f-bd6c-8ebd617857b8",
+        "hole_clearance|152050000|64005000|9d23b715-d8cf-49b9-b27e-93f5cb5d4fb0|33b90c74-66f0-43a3-9052-6332f6419d55",
+        "hole_clearance|152050000|64005000|9d23b715-d8cf-49b9-b27e-93f5cb5d4fb0|57e86122-af0c-4b08-bf31-1aff90bb02ea",
+        "hole_clearance|152550000|64005000|9d23b715-d8cf-49b9-b27e-93f5cb5d4fb0|0d92b3b2-d528-48a8-9f70-ef4c605a3944",
+        "hole_clearance|152550000|64005000|9d23b715-d8cf-49b9-b27e-93f5cb5d4fb0|e6a1c195-1cf2-4538-b019-5e2dc115e69b",
+        "silk_edge_clearance|227000000|102260000|27d97456-9dca-48f8-be32-d2a3afa9f4b6|d42086ca-0b05-4485-b1d0-b07610b99328",
+        "silk_edge_clearance|227000000|91740000|df260532-d47e-41e7-98ee-c480708e3829|12080966-9e98-495f-867b-52ecca8eb74c",
+        "silk_overlap|148330762|82707107|3063d35b-9da3-44e0-b1eb-c3c65c8f493f|7062d511-4c21-47ae-b9b6-2eea936f150e",
+        "silk_overlap|149108579|83484924|3063d35b-9da3-44e0-b1eb-c3c65c8f493f|9227b18a-0fea-40b3-806e-9b91e63ffe36",
+        "silk_overlap|149108579|83484924|e159ba30-24ec-4ca1-95d6-bc910695b50c|9227b18a-0fea-40b3-806e-9b91e63ffe36",
+        "silk_overlap|150098528|82494975|e159ba30-24ec-4ca1-95d6-bc910695b50c|af1ed2ae-b724-4879-8c09-e41f3b3efe5d",
+        "starved_thermal|152700000|64430000|305fc1fc-34bf-40a9-8db7-fe982f64eb2f|0d92b3b2-d528-48a8-9f70-ef4c605a3944|F.Cu",
+        "starved_thermal|152700000|64430000|305fc1fc-34bf-40a9-8db7-fe982f64eb2f|e6a1c195-1cf2-4538-b019-5e2dc115e69b|F.Cu"
+      ],
       "meta": {
         "version": 2
       },
@@ -116,20 +133,20 @@
       },
       "rules": {
         "max_error": 0.005,
-        "min_clearance": 0.0,
-        "min_connection": 0.0,
-        "min_copper_edge_clearance": 0.5,
-        "min_hole_clearance": 0.25,
-        "min_hole_to_hole": 0.25,
+        "min_clearance": 0.15,
+        "min_connection": 0.15,
+        "min_copper_edge_clearance": 0.3,
+        "min_hole_clearance": 0.26,
+        "min_hole_to_hole": 0.26,
         "min_microvia_diameter": 0.2,
         "min_microvia_drill": 0.1,
         "min_resolved_spokes": 2,
         "min_silk_clearance": 0.0,
         "min_text_height": 0.8,
         "min_text_thickness": 0.08,
-        "min_through_hole_diameter": 0.3,
-        "min_track_width": 0.0,
-        "min_via_annular_width": 0.1,
+        "min_through_hole_diameter": 0.25,
+        "min_track_width": 0.15,
+        "min_via_annular_width": 0.15,
         "min_via_diameter": 0.5,
         "solder_mask_to_copper_clearance": 0.0,
         "use_height_for_length_calcs": true
@@ -182,6 +199,7 @@
         0.254,
         0.3,
         0.4,
+        0.5,
         1.5,
         2.0,
         3.0
@@ -459,7 +477,8 @@
   },
   "libraries": {
     "pinned_footprint_libs": [
-      "tractions_symbols"
+      "tractions_symbols",
+      "Symbol"
     ],
     "pinned_symbol_libs": [
       "traction_symbols"
@@ -501,7 +520,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "plots/",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "",
