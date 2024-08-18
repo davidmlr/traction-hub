@@ -1,7 +1,8 @@
 # This file was automatically generated.
 
 [target.thumbv7em-none-eabi]
-runner = 'probe-rs run --chip STM32G431CBTx'
+runner = 'probe-rs run --chip STM32G431CBTx --connect-under-reset'
+
 
 [build]
 target = "thumbv7em-none-eabi"
