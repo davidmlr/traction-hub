@@ -4,65 +4,14 @@
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_stm32::adc::{Adc, SampleTime};
-use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
-use embassy_stm32::peripherals::PA10;
-use embassy_stm32::time::{khz, Hertz};
-use embassy_stm32::timer::complementary_pwm::{ComplementaryPwm, ComplementaryPwmPin};
-use embassy_stm32::timer::simple_pwm::PwmPin;
+use embassy_stm32::gpio::{Input, Level, Output, Pull, Speed};
+use embassy_stm32::time::Hertz;
 use embassy_stm32::Config;
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    // Uncomment to permanetly set nboot0 (BOOT0 is floating :D x_x)
-    // _*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_
-    // // Wait, while the memory interface is busy.
-    // while pac::FLASH.sr().read().bsy() {}
-    //
-    // // Unlock flash
-    // if pac::FLASH.cr().read().lock() {
-    //     defmt::info!("Flash is locked, unlocking");
-    //     /* Magic bytes from embassy-stm32/src/flash/g.rs / RM */
-    //     pac::FLASH.keyr().write_value(0x4567_0123);
-    //     pac::FLASH.keyr().write_value(0xCDEF_89AB);
-    // }
-    // // Check: Should be unlocked.
-    // assert_eq!(pac::FLASH.cr().read().lock(), false);
-    //
-    // // Unlock Option bytes
-    // if pac::FLASH.cr().read().optlock() {
-    //     defmt::info!("Option bytes locked, unlocking");
-    //
-    //     /* Source: RM / original HAL */
-    //     pac::FLASH.optkeyr().write_value(0x0819_2A3B);
-    //     pac::FLASH.optkeyr().write_value(0x4C5D_6E7F);
-    // }
-    // // Check: Should be unlocked
-    // assert_eq!(pac::FLASH.cr().read().optlock(), false);
-    //
-    // /* Program boot0 */
-    // pac::FLASH.optr().modify(|r| {
-    //     r.set_n_boot0(true);
-    //     r.set_n_swboot0(false);
-    // });
-    //
-    // // Check: Should have changed
-    // assert_eq!(pac::FLASH.optr().read().n_boot0(), true);
-    // assert_eq!(pac::FLASH.optr().read().n_swboot0(), false);
-    //
-    // // Reload option bytes. This should in general cause RESET.
-    // pac::FLASH.cr().modify(|w| w.set_optstrt(true));
-    // while pac::FLASH.sr().read().bsy() {}
-    //
-    // pac::FLASH.cr().modify(|w| w.set_obl_launch(true));
-    //
-    // defmt::info!("Relocking");
-    // // Lock option bytes and flash
-    // pac::FLASH.cr().modify(|w| w.set_optlock(true));
-    // pac::FLASH.cr().modify(|w| w.set_lock(true));
-    // _*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_*_
-
     let mut config = Config::default();
     {
         use embassy_stm32::rcc::*;
@@ -96,7 +45,7 @@ async fn main(_spawner: Spawner) {
     let octw = Input::new(p.PC14, Pull::Down);
     let fault = Input::new(p.PC13, Pull::Down);
 
-    let mut dc_cal = Output::new(p.PC15, Level::Low, Speed::Low);
+    // let mut dc_cal = Output::new(p.PC15, Level::Low, Speed::Low);
 
     let mut h1 = Output::new(p.PA10, Level::Low, Speed::Medium);
     let mut l1 = Output::new(p.PB15, Level::Low, Speed::Medium);
@@ -123,31 +72,6 @@ async fn main(_spawner: Spawner) {
             Timer::after_millis(200).await;
         }
     }
-    // set_gates(0, &mut h1, &mut h2, &mut h3, &mut l1, &mut l2, &mut l3);
-
-    // let ch1 = PwmPin::new_ch1(p.PA8, OutputType::PushPull);
-    // let ch1n = ComplementaryPwmPin::new_ch1(p.PB13, OutputType::PushPull);
-
-    // let ch2 = PwmPin::new_ch2(p.PA9, OutputType::PushPull);
-    // let ch2n = ComplementaryPwmPin::new_ch2(p.PB14, OutputType::PushPull);
-
-    // let ch3 = PwmPin::new_ch3(p.PA10, OutputType::PushPull);
-    // let ch3n = ComplementaryPwmPin::new_ch3(p.PB15, OutputType::PushPull);
-
-    // let mut pwm = ComplementaryPwm::new(
-    //     p.TIM1,
-    //     Some(ch1),
-    //     Some(ch1n),
-    //     Some(ch2),
-    //     Some(ch2n),
-    //     Some(ch3),
-    //     Some(ch3n),
-    //     None,
-    //     None,
-    //     khz(100),
-    //     Default::default(),
-    // );
-    // dc_cal.set_high();
     loop {
         let measured: f32 = adc2.blocking_read(&mut p.PA6).into();
         let measured_sens1: f32 = adc1.blocking_read(&mut p.PA2).into();
