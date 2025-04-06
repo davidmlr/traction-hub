@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use core::f32;
+
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_stm32::adc::{Adc, SampleTime};
@@ -60,23 +62,30 @@ async fn main(_spawner: Spawner) {
 
     Timer::after_millis(300).await;
     en.set_high();
-    for _i in 0..100 {
+    for i in 0..1000 {
         if fault.is_high() || octw.is_high() {
             en.set_low();
             error!("DRV8302 ERROR");
         }
+        let m: f32 = -(9_000.0 / 50.0);
+        let mut time: i32 = (m * (i as f32) + 10_000.0) as i32;
+        if i > 50 {
+            time = 1000;
+        }
+        info!("Time: {} ", time);
         for step in 0..6 {
             set_gates(step, &mut h1, &mut h2, &mut h3, &mut l1, &mut l2, &mut l3);
-            Timer::after_millis(10).await;
+            Timer::after_micros(time.try_into().unwrap()).await;
             set_gates(6, &mut h1, &mut h2, &mut h3, &mut l1, &mut l2, &mut l3);
-            Timer::after_millis(200).await;
+            Timer::after_micros(10).await;
         }
     }
+    en.set_low();
     loop {
         let measured: f32 = adc2.blocking_read(&mut p.PA6).into();
-        let measured_sens1: f32 = adc1.blocking_read(&mut p.PA2).into();
+        let measured_sens1: f32 = adc2.blocking_read(&mut p.PA0).into();
         let measured_sens2: f32 = adc2.blocking_read(&mut p.PA1).into();
-        let measured_sens3: f32 = adc2.blocking_read(&mut p.PA0).into();
+        let measured_sens3: f32 = adc1.blocking_read(&mut p.PA2).into();
         let measured_s01: f32 = adc1.blocking_read(&mut p.PB0).into();
         let measured_s02: f32 = adc1.blocking_read(&mut p.PB1).into();
         let voltage_vcc: f32 = 3.3 / 4095.0 * measured * 5.7;
@@ -87,18 +96,18 @@ async fn main(_spawner: Spawner) {
         let current_s02: f32 = 3.3 / 4095.0 * measured_s02;
         info!("Battery voltage: {} V", voltage_vcc);
         info!(
-            "Sens3 voltage: {} V | Sens2 voltage: {} V | Sens1 voltage: {} V",
-            voltage_sens3, voltage_sens2, voltage_sens1
+            "Sens1 voltage: {} V | Sens2 voltage: {} V | Sens3 voltage: {} V",
+            voltage_sens1, voltage_sens2, voltage_sens3
         );
         info!(
-            "Current SO1: {} I | Current SO2: {} I",
+            "Current SO1: {} A | Current SO2: {} A",
             current_s01, current_s02
         );
         if fault.is_high() || octw.is_high() {
             en.set_low();
             error!("DRV8302 ERROR");
         }
-        Timer::after_millis(500).await;
+        Timer::after_millis(100).await;
     }
 }
 
@@ -111,7 +120,7 @@ fn set_gates(
     l2: &mut Output,
     l3: &mut Output,
 ) {
-    info!("gates function {}", step);
+    // info!("gates function {}", step);
     match step {
         0 => {
             h1.set_high();
