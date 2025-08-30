@@ -44,6 +44,7 @@ async fn main(spawner: Spawner) {
         config.rcc.mux.adc12sel = mux::Adcsel::SYS;
         config.rcc.sys = Sysclk::PLL1_R;
     }
+
     let p = embassy_stm32::init(config);
 
     let r = split_resources!(p);

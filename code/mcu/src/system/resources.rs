@@ -5,5 +5,6 @@ use embassy_stm32::Peri;
 assign_resources! {
     voltage: Voltage {
         meas_pin: PA6,
+        adc: ADC2,
     }
 }
