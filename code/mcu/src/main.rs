@@ -5,17 +5,26 @@ mod fmt;
 
 #[cfg(not(feature = "defmt"))]
 use panic_halt as _;
+
 #[cfg(feature = "defmt")]
 use {defmt_rtt as _, panic_probe as _};
 
 use embassy_executor::Spawner;
 use embassy_stm32::time::Hertz;
 use embassy_stm32::Config;
-use embassy_time::{Duration, Timer};
 use fmt::info;
 
+use system::resources::{Voltage, AssignedResources};
+
+use task::{orchestrate::orchestrate, voltage::voltage };
+
+/// System core modules
+mod system;
+/// Task implementation
+mod task;
+
 #[embassy_executor::main]
-async fn main(_spawner: Spawner) {
+async fn main(spawner: Spawner) {
     let mut config = Config::default();
     {
         use embassy_stm32::rcc::*;
@@ -37,8 +46,10 @@ async fn main(_spawner: Spawner) {
     }
     let p = embassy_stm32::init(config);
 
-    loop {
-        info!("Hello, World!");
-        Timer::after(Duration::from_millis(500)).await;
-    }
+    let r = split_resources!(p);
+
+    info!("traction-hub starting...");
+
+    spawner.spawn(orchestrate()).unwrap();
+    spawner.spawn(voltage(r.voltage)).unwrap();
 }
