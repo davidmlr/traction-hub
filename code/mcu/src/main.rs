@@ -16,7 +16,7 @@ use fmt::info;
 
 use system::resources::{Voltage, AssignedResources};
 
-use task::{orchestrate::orchestrate, voltage::voltage };
+use task::{orchestrate::orchestrate, voltage::voltage, usb::usb };
 
 /// System core modules
 mod system;
@@ -53,4 +53,5 @@ async fn main(spawner: Spawner) {
 
     spawner.spawn(orchestrate()).unwrap();
     spawner.spawn(voltage(r.voltage)).unwrap();
+    spawner.spawn(usb(r.usb)).unwrap();
 }
