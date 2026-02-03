@@ -14,9 +14,9 @@ use embassy_stm32::time::Hertz;
 use embassy_stm32::Config;
 use fmt::info;
 
-use system::resources::{Voltage, AssignedResources};
+use system::resources::{AssignedResources, Usb, Voltage};
 
-use task::{orchestrate::orchestrate, voltage::voltage, usb::usb };
+use task::{orchestrate::orchestrate, usb::usb, voltage::voltage};
 
 /// System core modules
 mod system;
@@ -52,6 +52,6 @@ async fn main(spawner: Spawner) {
     info!("traction-hub starting...");
 
     spawner.spawn(orchestrate()).unwrap();
-    spawner.spawn(voltage(r.voltage)).unwrap();
-    spawner.spawn(usb(r.usb)).unwrap();
+    spawner.spawn(voltage(spawner, r.voltage)).unwrap();
+    spawner.spawn(usb(spawner, r.usb)).unwrap();
 }

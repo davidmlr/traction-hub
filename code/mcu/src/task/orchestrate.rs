@@ -1,17 +1,13 @@
+use crate::fmt::info;
 use crate::system::{
-    event::EVENT_CHANNEL,
-    event::Events,
-    state::SYSTEM_STATE,
-    state::STATE_CHANGED,
+    event::Events, event::EVENT_CHANNEL, state::STATE_CHANGED, state::SYSTEM_STATE,
 };
-use defmt::info;
 
 #[embassy_executor::task]
 pub async fn orchestrate() {
     let receiver = EVENT_CHANNEL.receiver();
 
     loop {
-        // Do nothing until we receive any event
         let event = receiver.receive().await;
 
         {
@@ -23,7 +19,6 @@ pub async fn orchestrate() {
                     info!("Vsys voltage: {}", voltage);
                 }
             }
-
         }
 
         STATE_CHANGED.signal(());
