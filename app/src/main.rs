@@ -2,7 +2,6 @@
 #![no_main]
 
 mod fmt;
-mod telemetry;
 
 #[cfg(not(feature = "defmt"))]
 use panic_halt as _;
@@ -10,123 +9,148 @@ use panic_halt as _;
 use {defmt_rtt as _, panic_probe as _};
 
 use embassy_executor::Spawner;
+use embassy_stm32::adc::{Adc, AdcChannel, AdcConfig, Resolution, SampleTime};
 use embassy_stm32::{
-    bind_interrupts,
-    gpio::{Level, Output, Speed},
-    peripherals,
-    time::Hertz,
-    usb::{self, Driver},
+    gpio::{Level, Output, OutputType, Speed},
+    time::{khz, Hertz},
+    timer::{
+        complementary_pwm::{ComplementaryPwm, ComplementaryPwmPin},
+        simple_pwm::PwmPin,
+        Channel,
+    },
 };
 use embassy_time::{Duration, Instant, Timer};
-use embassy_usb::{
-    class::cdc_acm::{CdcAcmClass, State},
-    Builder,
-};
 use fmt::info;
-use static_cell::StaticCell;
-use telemetry::Telemetry;
-
-bind_interrupts!(struct Irqs {
-    USB_LP => usb::InterruptHandler<peripherals::USB>;
-});
-
-type UsbDriver = Driver<'static, peripherals::USB>;
-
-static CDC_STATE: StaticCell<State> = StaticCell::new();
-static CONFIG_DESC: StaticCell<[u8; 256]> = StaticCell::new();
-static BOS_DESC: StaticCell<[u8; 256]> = StaticCell::new();
-static MSOS_DESC: StaticCell<[u8; 256]> = StaticCell::new();
-static CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
-
-#[embassy_executor::task]
-async fn usb_task(mut device: embassy_usb::UsbDevice<'static, UsbDriver>) {
-    device.run().await;
-}
-
-#[embassy_executor::task]
-async fn telemetry_task(mut class: CdcAcmClass<'static, UsbDriver>) {
-    loop {
-        class.wait_connection().await;
-        info!("USB host connected");
-
-        loop {
-            let frame = Telemetry {
-                timestamp_ms: Instant::now().as_millis() as u32,
-                ..Default::default()
-            };
-
-            let mut buf = [0u8; 32];
-            match postcard::to_slice_cobs(&frame, &mut buf) {
-                Ok(encoded) => {
-                    if class.write_packet(encoded).await.is_err() {
-                        break;
-                    }
-                }
-                Err(_) => {}
-            }
-
-            Timer::after(Duration::from_millis(10)).await; // 100 Hz
-        }
-
-        info!("USB host disconnected");
-    }
-}
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let mut config = embassy_stm32::Config::default();
     {
         use embassy_stm32::rcc::*;
-        config.rcc.hse = Some(Hse {
-            freq: Hertz(24_000_000),
-            mode: HseMode::Oscillator, // crystal; use HseMode::Bypass for clock gen IC
-        });
+        // Not in use for now
+        // config.rcc.hse = Some(Hse {
+        //     freq: Hertz(24_000_000),
+        //     mode: HseMode::Oscillator,
+        // });
         config.rcc.pll = Some(Pll {
-            source: PllSource::HSE,
-            prediv: PllPreDiv::DIV6,    // 24 MHz / 6 = 4 MHz VCO input
-            mul: PllMul::MUL85,         // 4 MHz * 85  = 340 MHz VCO
+            source: PllSource::HSI,
+            prediv: PllPreDiv::DIV4, // 16 MHz / 4 = 4 MHz VCO input
+            mul: PllMul::MUL40,      // 4 MHz * 40  = 160 MHz VCO
             divp: None,
             divq: None,
-            divr: Some(PllRDiv::DIV2),  // 340 MHz / 2 = 170 MHz SYSCLK
+            divr: Some(PllRDiv::DIV2), // 160 MHz / 2 = 80 MHz SYSCLK
         });
         config.rcc.sys = Sysclk::PLL1_R;
         config.rcc.mux.adc12sel = mux::Adcsel::SYS;
         // HSI48 as USB 48 MHz clock source (no PLL changes needed)
-        config.rcc.hsi48 = Some(Default::default());
-        config.rcc.mux.clk48sel = mux::Clk48sel::HSI48;
+        // config.rcc.hsi48 = Some(Default::default());
+        // config.rcc.mux.clk48sel = mux::Clk48sel::HSI48;
     }
     let p = embassy_stm32::init(config);
 
-    let mut led = Output::new(p.PB8, Level::High, Speed::Low);
+    let mut en = Output::new(p.PA15, Level::Low, Speed::Low);
 
-    // USB FS: PA12 = D+, PA11 = D-
-    let driver = Driver::new(p.USB, Irqs, p.PA12, p.PA11);
+    //ADC
+    let mut adc_config = AdcConfig::default();
+    adc_config.resolution = Some(Resolution::BITS12);
+    let mut adc = Adc::new(p.ADC1, adc_config);
+    let mut sens1 = p.PB1;
+    let mut sens2 = p.PB0;
+    let mut vrefint = adc.enable_vrefint();
+    let vrefint_sample = adc.blocking_read(&mut vrefint, SampleTime::CYCLES640_5);
 
-    let mut usb_config = embassy_usb::Config::new(0xc0de, 0xcafe);
-    usb_config.manufacturer = Some("TractionHub");
-    usb_config.product = Some("Motor Controller");
-    usb_config.serial_number = Some("001");
-    usb_config.max_power = 100; // mA
+    let convert_to_millivolts = |sample: u16| {
+        // From http://www.st.com/resource/en/datasheet/DM00071990.pdf
+        // 6.3.24 Reference voltage
+        const VREFINT_MV: u32 = 1210; // mV
 
-    let mut builder = Builder::new(
-        driver,
-        usb_config,
-        CONFIG_DESC.init([0u8; 256]),
-        BOS_DESC.init([0u8; 256]),
-        MSOS_DESC.init([0u8; 256]),
-        CONTROL_BUF.init([0u8; 64]),
+        (u32::from(sample) * VREFINT_MV / u32::from(vrefint_sample)) as u16
+    };
+
+    let convert_to_current = |sample| {
+        let sample_mv: u16 = convert_to_millivolts(sample);
+        let gain = 10 as f32;
+        let bias = 1650 as u16; // mV
+        let sens_res = 1 as f32; // mOhm
+        let shunt_voltage: f32;
+
+        if sample_mv >= bias {
+            shunt_voltage = (sample_mv - bias) as f32 / gain;
+        } else {
+            shunt_voltage = (bias - sample_mv) as f32 / -gain;
+        }
+        return shunt_voltage / sens_res;
+    };
+
+    let ch1 = PwmPin::new(p.PA8, OutputType::PushPull);
+    let ch1n = ComplementaryPwmPin::new(p.PB13, OutputType::PushPull);
+    let ch2 = PwmPin::new(p.PA9, OutputType::PushPull);
+    let ch2n = ComplementaryPwmPin::new(p.PB14, OutputType::PushPull);
+    let ch3 = PwmPin::new(p.PA10, OutputType::PushPull);
+    let ch3n = ComplementaryPwmPin::new(p.PB15, OutputType::PushPull);
+
+    let mut pwm = ComplementaryPwm::new(
+        p.TIM1,
+        Some(ch1),
+        Some(ch1n),
+        Some(ch2),
+        Some(ch2n),
+        Some(ch3),
+        Some(ch3n),
+        None,
+        None,
+        khz(20),
+        Default::default(),
     );
 
-    let class = CdcAcmClass::new(&mut builder, CDC_STATE.init(State::new()), 64);
-    let usb = builder.build();
+    let max = pwm.get_max_duty();
+    pwm.set_dead_time((max / 1024) as u16);
 
-    spawner.spawn(usb_task(usb).unwrap());
-    spawner.spawn(telemetry_task(class).unwrap());
+    let duty = max / 10; // ~10 % — klein halten! Noch keine Stromregelung
+                         // → erste Läufe an strombegrenztem Netzteil
+
+    // alle Phasen floaten zu Beginn
+    pwm.disable(Channel::Ch1);
+    pwm.disable(Channel::Ch2);
+    pwm.disable(Channel::Ch3);
+
+    Timer::after_millis(100).await;
+
+    let mut step: u8 = 1;
+    let mut period_us: u64 = 5000; // Open-Loop-Start: langsam beginnen
+
+    en.set_high();
 
     loop {
-        led.set_high();
-        Timer::after(Duration::from_millis(500)).await;
-        led.set_low();
-        Timer::after(Duration::from_millis(500)).await;
+        // (Quelle = +V/PWM, Senke = GND/statisch, floatend)   A=Ch1  B=Ch2  C=Ch3
+        let (src, sink, flt) = match step {
+            1 => (Channel::Ch1, Channel::Ch3, Channel::Ch2), // A→C
+            2 => (Channel::Ch1, Channel::Ch2, Channel::Ch3), // A→B
+            3 => (Channel::Ch3, Channel::Ch2, Channel::Ch1), // C→B
+            4 => (Channel::Ch3, Channel::Ch1, Channel::Ch2), // C→A
+            5 => (Channel::Ch2, Channel::Ch1, Channel::Ch3), // B→A
+            _ => (Channel::Ch2, Channel::Ch3, Channel::Ch1), // B→C
+        };
+
+        pwm.disable(flt); // beide FETs aus → Phase floatet
+        pwm.set_duty(sink, 0); // Duty 0 → Low-Side dauerhaft an
+        pwm.enable(sink);
+        pwm.set_duty(src, duty); // High-Side choppt, Low-Side = Komplement
+        pwm.enable(src);
+
+        let vsens1 = adc.blocking_read(&mut sens1, SampleTime::CYCLES640_5);
+        let vsens2 = adc.blocking_read(&mut sens2, SampleTime::CYCLES640_5);
+        info!(
+            "Current Phase 1: {} mA | Current Phase 3: {} mA",
+            convert_to_current(vsens1),
+            convert_to_current(vsens2)
+        );
+
+        Timer::after_micros(period_us).await;
+
+        step = if step >= 6 { 1 } else { step + 1 };
+        if period_us > 5000 {
+            period_us -= 5;
+        } // Drehzahl langsam hochrampen
     }
 }
