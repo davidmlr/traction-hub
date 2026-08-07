@@ -27,7 +27,10 @@ use embassy_stm32::{
 };
 use embassy_time::{Duration, Instant, Timer};
 use embassy_usb::{
-    class::cdc_acm::{CdcAcmClass, State},
+    class::{
+        self,
+        cdc_acm::{CdcAcmClass, State},
+    },
     driver::EndpointError,
     Builder, UsbDevice,
 };
@@ -112,10 +115,8 @@ async fn main(spawner: Spawner) {
 
     // Run the USB device.
     spawner.spawn(unwrap!(usb_task(usb)));
-
-    // Wait for usb connection
-    // TODO: put usb and telemetry into own task
-    class.wait_connection().await;
+    // Class
+    spawner.spawn(unwrap!(cdc_task(class)));
 
     // usb send buffer
     let mut send_buf = [0; 64];
@@ -227,21 +228,29 @@ async fn main(spawner: Spawner) {
         let msg = &send_buf[..msg_len];
         // TODO: handle disconnect
         info!("buf: {}", msg);
-        class.write_packet(msg).await.unwrap();
+        //class.write_packet(msg).await.unwrap();
 
         step = if step >= 6 { 1 } else { step + 1 };
         if period_us > 5000 {
             period_us -= 5;
         }
+        Timer::after_micros(period_us).await;
     }
 }
 
-type MyUsbDriver = Driver<'static, peripherals::USB>;
-type MyUsbDevice = UsbDevice<'static, MyUsbDriver>;
+#[embassy_executor::task]
+async fn usb_task(mut usb: UsbDevice<'static, Driver<'static, peripherals::USB>>) -> ! {
+    usb.run().await
+}
 
 #[embassy_executor::task]
-async fn usb_task(mut usb: MyUsbDevice) -> ! {
-    usb.run().await
+async fn cdc_task(mut class: CdcAcmClass<'static, Driver<'static, peripherals::USB>>) {
+    class.wait_connection().await;
+    let send_buf: [u8; _] = [0; 64];
+    loop {
+        class.write_packet(&send_buf).await.unwrap();
+        Timer::after_millis(1000).await;
+    }
 }
 
 struct Disconnected {}
