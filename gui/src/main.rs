@@ -3,10 +3,8 @@ use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Telemetry {
-    timestamp_ms: u32,
-    vbus_v: f32,
+    timestamp_ms: u64,
     ia_a: f32,
-    ib_a: f32,
     ic_a: f32,
 }
 
@@ -26,16 +24,12 @@ fn main() {
         match port.read(&mut read_buf) {
             Ok(n) => {
                 buf.extend_from_slice(&read_buf[..n]);
-
-                while let Some(pos) = buf.iter().position(|&b| b == 0x00) {
-                    let mut frame: Vec<u8> = buf.drain(..=pos).collect();
-                    match postcard::from_bytes_cobs::<Telemetry>(&mut frame) {
-                        Ok(t) => println!(
-                            "t={:>8}ms  Vbus={:.2}V  Ia={:+.3}A  Ib={:+.3}A  Ic={:+.3}A",
-                            t.timestamp_ms, t.vbus_v, t.ia_a, t.ib_a, t.ic_a
-                        ),
-                        Err(e) => eprintln!("decode error: {e}"),
-                    }
+                match postcard::from_bytes::<Telemetry>(&mut read_buf[..n]) {
+                    Ok(t) => println!(
+                        "t={:>8}ms Ia={:+.3}mA Ic={:+.3}mA",
+                        t.timestamp_ms, t.ia_a, t.ic_a
+                    ),
+                    Err(e) => eprintln!("decode error: {e}"),
                 }
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {}
