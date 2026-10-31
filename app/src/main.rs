@@ -6,22 +6,37 @@ mod fmt;
 #[cfg(not(feature = "defmt"))]
 use panic_halt as _;
 
+mod current_sense;
+
 #[cfg(feature = "defmt")]
 use {defmt_rtt as _, panic_probe as _};
 
 use embassy_executor::Spawner;
 use embassy_stm32::{
-    adc::{Adc, AdcConfig, Resolution, SampleTime},
+    adc::{Adc, AdcChannel, AdcConfig, InjectedTrigger, Resolution, SampleTime},
+    bind_interrupts,
     gpio::{Level, Output, OutputType, Speed},
+    peripherals::ADC1,
     time::khz,
     timer::{
-        complementary_pwm::{ComplementaryPwm, ComplementaryPwmPin},
+        complementary_pwm::{ComplementaryPwm, ComplementaryPwmPin, Mms2},
         simple_pwm::PwmPin,
         Channel,
     },
 };
 use embassy_time::Timer;
 use fmt::info;
+
+pub struct Tim1Trgo2;
+impl InjectedTrigger<ADC1> for Tim1Trgo2 {
+    fn signal(&self) -> u8 {
+        8
+    }
+}
+
+bind_interrupts!( struct Irqs {
+    ADC1_2 => current_sense::CurrentSenseIrq;
+});
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
@@ -52,33 +67,19 @@ async fn main(_spawner: Spawner) {
     let mut adc_config = AdcConfig::default();
     adc_config.resolution = Some(Resolution::BITS12);
     let mut adc = Adc::new(p.ADC1, adc_config);
-    let mut sens1 = p.PB1;
-    let mut sens2 = p.PB0;
     let mut vrefint = adc.enable_vrefint();
-    let vrefint_sample = adc.blocking_read(&mut vrefint, SampleTime::CYCLES640_5);
+    let vrefint_raw = adc.blocking_read(&mut vrefint, SampleTime::CYCLES640_5);
 
-    let convert_to_millivolts = |sample: u16| {
-        // From http://www.st.com/resource/en/datasheet/DM00071990.pdf
-        // 6.3.24 Reference voltage
-        const VREFINT_MV: u32 = 1210; // mV
-
-        (u32::from(sample) * VREFINT_MV / u32::from(vrefint_sample)) as u16
-    };
-
-    let convert_to_current = |sample| {
-        let sample_mv: u16 = convert_to_millivolts(sample);
-        let gain = 10 as f32;
-        let bias = 1650 as u16; // mV
-        let sens_res = 0.001 as f32; // Ohm
-        let shunt_voltage: f32;
-
-        if sample_mv >= bias {
-            shunt_voltage = (sample_mv - bias) as f32 / gain;
-        } else {
-            shunt_voltage = (bias - sample_mv) as f32 / -gain;
-        }
-        return shunt_voltage / sens_res;
-    };
+    // Must stay alive: dropping it stops the ADC
+    let _inj = adc.setup_injected_conversions(
+        [
+            (p.PB1.degrade_adc(), SampleTime::CYCLES12_5),
+            (p.PB0.degrade_adc(), SampleTime::CYCLES12_5),
+        ],
+        Tim1Trgo2,
+        embassy_stm32::adc::Exten::RISING_EDGE,
+        true,
+    );
 
     // MOTOR
     let mut en = Output::new(p.PA15, Level::Low, Speed::Low);
@@ -101,11 +102,13 @@ async fn main(_spawner: Spawner) {
         None,
         None,
         khz(20),
-        Default::default(),
+        embassy_stm32::timer::low_level::CountingMode::CenterAlignedUpInterrupts,
     );
 
     let max = pwm.get_max_duty();
     pwm.set_dead_time((max / 1024) as u16);
+    pwm.set_duty(Channel::Ch4, max - 1);
+    pwm.set_mms2(Mms2::COMPARE_OC4);
 
     let duty = max / 10;
 
@@ -115,10 +118,19 @@ async fn main(_spawner: Spawner) {
 
     Timer::after_millis(100).await;
 
-    let mut step: u8 = 1;
-    let mut period_us: u64 = 6000;
+    current_sense::enable(Irqs);
 
     en.set_high();
+    Timer::after_millis(10).await;
+
+    // Power stage still off, so this is the zero-current offset
+    let cal = current_sense::Calibration::measure(vrefint_raw, 256).await;
+    let (bias_a_mv, bias_c_mv) = cal.bias_mv();
+    info!("bias_a: {} mV | bias_c: {} mV", bias_a_mv, bias_c_mv);
+
+    let mut step: u8 = 1;
+    let mut period_us: u64 = 6000;
+    let mut log_div: u32 = 0;
 
     loop {
         //(Quelle = +V/PWM, Senke = GND/statisch, floatend)   A=Ch1  B=Ch2  C=Ch3
@@ -137,14 +149,13 @@ async fn main(_spawner: Spawner) {
         pwm.set_duty(src, duty); // High-Side choppt, Low-Side = Komplement
         pwm.enable(src);
 
-        let vsens1 = adc.blocking_read(&mut sens1, SampleTime::CYCLES640_5);
-        let vsens2 = adc.blocking_read(&mut sens2, SampleTime::CYCLES640_5);
-
-        info!(
-            "i_a: {}, i_c: {}",
-            convert_to_current(vsens1),
-            convert_to_current(vsens2)
-        );
+        log_div += 1;
+        if log_div >= 50 {
+            log_div = 0;
+            let (raw_a, raw_c) = current_sense::latest();
+            let (i_a, i_c) = cal.to_amps(raw_a, raw_c);
+            info!("step {} | i_a: {} A | i_c: {} A", step, i_a, i_c);
+        }
 
         Timer::after_micros(period_us).await;
 
