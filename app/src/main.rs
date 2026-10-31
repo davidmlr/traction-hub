@@ -189,7 +189,7 @@ async fn main(spawner: Spawner) {
     Timer::after_millis(100).await;
 
     let mut step: u8 = 1;
-    let mut period_us: u64 = 5000;
+    let mut period_us: u64 = 6000;
 
     en.set_high();
 
@@ -230,11 +230,12 @@ async fn main(spawner: Spawner) {
         info!("buf: {}", msg);
         //class.write_packet(msg).await.unwrap();
 
+        Timer::after_micros(period_us).await;
+
         step = if step >= 6 { 1 } else { step + 1 };
-        if period_us > 5000 {
+        if period_us > 1000 {
             period_us -= 5;
         }
-        Timer::after_micros(period_us).await;
     }
 }
 
