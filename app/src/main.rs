@@ -3,7 +3,6 @@
 
 mod fmt;
 
-use crate::fmt::unwrap;
 #[cfg(not(feature = "defmt"))]
 use panic_halt as _;
 
@@ -11,47 +10,21 @@ use panic_halt as _;
 use {defmt_rtt as _, panic_probe as _};
 
 use embassy_executor::Spawner;
-use embassy_futures::join::join;
 use embassy_stm32::{
-    adc::{Adc, AdcChannel, AdcConfig, Resolution, SampleTime},
-    bind_interrupts,
+    adc::{Adc, AdcConfig, Resolution, SampleTime},
     gpio::{Level, Output, OutputType, Speed},
-    peripherals,
-    time::{khz, Hertz},
+    time::khz,
     timer::{
         complementary_pwm::{ComplementaryPwm, ComplementaryPwmPin},
         simple_pwm::PwmPin,
         Channel,
     },
-    usb::{self, Driver, Instance},
 };
-use embassy_time::{Duration, Instant, Timer};
-use embassy_usb::{
-    class::{
-        self,
-        cdc_acm::{CdcAcmClass, State},
-    },
-    driver::EndpointError,
-    Builder, UsbDevice,
-};
+use embassy_time::Timer;
 use fmt::info;
-use postcard::to_slice;
-use serde::{Deserialize, Serialize};
-use static_cell::StaticCell;
-
-bind_interrupts!(struct Irqs {
-    USB_LP => usb::InterruptHandler<peripherals::USB>;
-});
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Telemetry {
-    timestamp_ms: u64,
-    ia_a: f32,
-    ic_a: f32,
-}
 
 #[embassy_executor::main]
-async fn main(spawner: Spawner) {
+async fn main(_spawner: Spawner) {
     let mut config = embassy_stm32::Config::default();
     {
         use embassy_stm32::rcc::*;
@@ -74,52 +47,6 @@ async fn main(spawner: Spawner) {
         config.rcc.mux.clk48sel = mux::Clk48sel::HSI48;
     }
     let p = embassy_stm32::init(config);
-
-    //USB
-    // Create the driver, from the HAL.
-    let driver = Driver::new(p.USB, Irqs, p.PA12, p.PA11);
-
-    // Create embassy-usb Config
-    let mut config = embassy_usb::Config::new(0xc0de, 0xcafe);
-    config.manufacturer = Some("ShortCircuit");
-    config.product = Some("traction-hub");
-    config.serial_number = Some("0000000");
-
-    // Create embassy-usb DeviceBuilder using the driver and config.
-    // It needs some buffers for building the descriptors.
-    let mut builder = {
-        static CONFIG_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
-        static BOS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
-        static CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
-
-        let builder = embassy_usb::Builder::new(
-            driver,
-            config,
-            CONFIG_DESCRIPTOR.init([0; 256]),
-            BOS_DESCRIPTOR.init([0; 256]),
-            &mut [], // no msos descriptors
-            CONTROL_BUF.init([0; 64]),
-        );
-        builder
-    };
-
-    // Create classes on the builder.
-    let mut class = {
-        static STATE: StaticCell<State> = StaticCell::new();
-        let state = STATE.init(State::new());
-        CdcAcmClass::new(&mut builder, state, 64)
-    };
-
-    // Build the builder.
-    let usb = builder.build();
-
-    // Run the USB device.
-    spawner.spawn(unwrap!(usb_task(usb)));
-    // Class
-    spawner.spawn(unwrap!(cdc_task(class)));
-
-    // usb send buffer
-    let mut send_buf = [0; 64];
 
     //ADC
     let mut adc_config = AdcConfig::default();
@@ -213,22 +140,11 @@ async fn main(spawner: Spawner) {
         let vsens1 = adc.blocking_read(&mut sens1, SampleTime::CYCLES640_5);
         let vsens2 = adc.blocking_read(&mut sens2, SampleTime::CYCLES640_5);
 
-        // send telemetry data over usb
-        let msg_len = to_slice(
-            &Telemetry {
-                timestamp_ms: Instant::now().as_millis(),
-                ia_a: convert_to_current(vsens1),
-                ic_a: convert_to_current(vsens2),
-            },
-            &mut send_buf,
-        )
-        .unwrap()
-        .iter()
-        .len();
-        let msg = &send_buf[..msg_len];
-        // TODO: handle disconnect
-        info!("buf: {}", msg);
-        //class.write_packet(msg).await.unwrap();
+        info!(
+            "i_a: {}, i_c: {}",
+            convert_to_current(vsens1),
+            convert_to_current(vsens2)
+        );
 
         Timer::after_micros(period_us).await;
 
@@ -236,43 +152,5 @@ async fn main(spawner: Spawner) {
         if period_us > 1000 {
             period_us -= 5;
         }
-    }
-}
-
-#[embassy_executor::task]
-async fn usb_task(mut usb: UsbDevice<'static, Driver<'static, peripherals::USB>>) -> ! {
-    usb.run().await
-}
-
-#[embassy_executor::task]
-async fn cdc_task(mut class: CdcAcmClass<'static, Driver<'static, peripherals::USB>>) {
-    class.wait_connection().await;
-    let send_buf: [u8; _] = [0; 64];
-    loop {
-        class.write_packet(&send_buf).await.unwrap();
-        Timer::after_millis(1000).await;
-    }
-}
-
-struct Disconnected {}
-
-impl From<EndpointError> for Disconnected {
-    fn from(val: EndpointError) -> Self {
-        match val {
-            EndpointError::BufferOverflow => panic!("Buffer overflow"),
-            EndpointError::Disabled => Disconnected {},
-        }
-    }
-}
-
-async fn echo<'d, T: Instance + 'd>(
-    class: &mut CdcAcmClass<'d, Driver<'d, T>>,
-) -> Result<(), Disconnected> {
-    let mut buf = [0; 64];
-    loop {
-        let n = class.read_packet(&mut buf).await?;
-        let data = &buf[..n];
-        info!("data: {:x}", data);
-        class.write_packet(data).await?;
     }
 }
