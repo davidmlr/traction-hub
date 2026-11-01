@@ -1,3 +1,5 @@
+use core::sync::atomic::Ordering;
+
 use embassy_executor::Spawner;
 use embassy_stm32::{
     interrupt::typelevel::Binding,
@@ -5,18 +7,26 @@ use embassy_stm32::{
     usb::{self, DmPin, DpPin, Driver, Instance},
     Peri,
 };
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 use embassy_time::Timer;
 use embassy_usb::{
-    class::{
-        self,
-        cdc_acm::{CdcAcmClass, State},
-    },
+    class::cdc_acm::{CdcAcmClass, State},
+    driver::EndpointError,
     UsbDevice,
 };
 use static_cell::StaticCell;
 
-use postcard::{to_slice, to_slice_cobs};
-use serde::{Deserialize, Serialize};
+use postcard::to_slice_cobs;
+use protocol::{Calibration, DeviceMsg, Telemetry};
+
+use crate::{current_sense, STEP};
+
+static CALIBRATION: Signal<CriticalSectionRawMutex, Calibration> = Signal::new();
+
+/// Hands the startup calibration to the USB task, which sends it on every connect.
+pub fn set_calibration(cal: Calibration) {
+    CALIBRATION.signal(cal);
+}
 
 pub fn init(
     spawner: Spawner,
@@ -48,7 +58,7 @@ pub fn init(
         builder
     };
 
-    let mut class = {
+    let class = {
         static STATE: StaticCell<State> = StaticCell::new();
         let state = STATE.init(State::new());
         CdcAcmClass::new(&mut builder, state, 64)
@@ -66,32 +76,35 @@ type UsbDriver = Driver<'static, USB>;
 async fn usb_task(mut device: UsbDevice<'static, UsbDriver>) -> ! {
     device.run().await
 }
-#[derive(Serialize, Deserialize)]
-struct TestTelemetry {
-    val_1: u16,
-    val_2: u16,
-}
-
 #[embassy_executor::task]
 async fn tx_task(mut class: CdcAcmClass<'static, UsbDriver>) {
-    let mut buf = [0; 64];
-    let mut counter: u16 = 0;
+    let cal = CALIBRATION.wait().await;
     loop {
         class.wait_connection().await;
+        // Every new host needs the calibration first
+        if send(&mut class, &DeviceMsg::Calibration(cal))
+            .await
+            .is_err()
+        {
+            continue;
+        }
         loop {
-            let msg = to_slice_cobs(
-                &TestTelemetry {
-                    val_1: counter,
-                    val_2: 1232,
-                },
-                &mut buf,
-            )
-            .unwrap();
-            if class.write_packet(msg).await.is_err() {
+            let (i_a, i_c) = current_sense::latest();
+            let step = STEP.load(Ordering::Relaxed);
+            let msg = DeviceMsg::Telemetry(Telemetry { i_a, i_c, step });
+            if send(&mut class, &msg).await.is_err() {
                 break;
-            };
-            counter += 1;
+            }
             Timer::after_millis(100).await;
         }
     }
+}
+
+async fn send(
+    class: &mut CdcAcmClass<'static, UsbDriver>,
+    msg: &DeviceMsg,
+) -> Result<(), EndpointError> {
+    let mut buf = [0; 64];
+    let frame = to_slice_cobs(msg, &mut buf).unwrap();
+    class.write_packet(frame).await
 }

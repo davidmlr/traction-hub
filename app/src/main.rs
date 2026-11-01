@@ -12,6 +12,8 @@ mod usb_telem;
 #[cfg(feature = "defmt")]
 use {defmt_rtt as _, panic_probe as _};
 
+use core::sync::atomic::{AtomicU8, Ordering};
+
 use embassy_executor::Spawner;
 use embassy_stm32::{
     adc::{Adc, AdcChannel, AdcConfig, InjectedTrigger, Resolution, SampleTime},
@@ -34,6 +36,9 @@ impl InjectedTrigger<ADC1> for Tim1Trgo2 {
         8
     }
 }
+
+/// Current commutation step (1..=6), 0 while stopped.
+pub static STEP: AtomicU8 = AtomicU8::new(0);
 
 bind_interrupts!( struct Irqs {
     ADC1_2 => current_sense::CurrentSenseIrq;
@@ -129,7 +134,8 @@ async fn main(spawner: Spawner) {
     Timer::after_millis(10).await;
 
     // Power stage still off, so this is the zero-current offset
-    let cal = current_sense::Calibration::measure(vrefint_raw, 256).await;
+    let cal = current_sense::calibrate(vrefint_raw, 256).await;
+    usb_telem::set_calibration(cal);
     let (bias_a_mv, bias_c_mv) = cal.bias_mv();
     info!("bias_a: {} mV | bias_c: {} mV", bias_a_mv, bias_c_mv);
 
@@ -153,6 +159,7 @@ async fn main(spawner: Spawner) {
         pwm.enable(sink);
         pwm.set_duty(src, duty); // High-Side choppt, Low-Side = Komplement
         pwm.enable(src);
+        STEP.store(step, Ordering::Relaxed);
 
         log_div += 1;
         if log_div >= 50 {

@@ -1,11 +1,5 @@
-use serde::{Deserialize, Serialize};
+use protocol::{Calibration, DeviceMsg};
 use std::time::Duration;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Telemetry {
-    val_1: u16,
-    val_2: u16,
-}
 
 fn main() {
     let port_name = find_port().expect("TractionHub not found. Is it connected?");
@@ -18,6 +12,7 @@ fn main() {
 
     let mut buf: Vec<u8> = Vec::new();
     let mut read_buf = [0u8; 64];
+    let mut cal: Option<Calibration> = None;
 
     loop {
         match port.read(&mut read_buf) {
@@ -26,8 +21,19 @@ fn main() {
                 while let Some(end) = buf.iter().position(|&b| b == 0) {
                     let mut frame: Vec<u8> = buf.drain(..=end).collect();
 
-                    match postcard::from_bytes_cobs::<Telemetry>(&mut frame) {
-                        Ok(t) => println!("val_1={} val_2={}", t.val_1, t.val_2),
+                    match postcard::from_bytes_cobs::<DeviceMsg>(&mut frame) {
+                        Ok(DeviceMsg::Calibration(c)) => {
+                            let (bias_a, bias_c) = c.bias_mv();
+                            println!("calibration: bias_a={bias_a:.1} mV bias_c={bias_c:.1} mV");
+                            cal = Some(c);
+                        }
+                        Ok(DeviceMsg::Telemetry(t)) => match &cal {
+                            Some(c) => {
+                                let (i_a, i_c) = c.to_amps(t.i_a, t.i_c);
+                                println!("step={} i_a={i_a:6.2} A i_c={i_c:6.2} A", t.step);
+                            }
+                            None => println!("step={} i_a={} i_c={} (raw)", t.step, t.i_a, t.i_c),
+                        },
                         Err(e) => eprintln!("decode error: {e}"),
                     }
                 }
