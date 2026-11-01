@@ -7,6 +7,7 @@ mod fmt;
 use panic_halt as _;
 
 mod current_sense;
+mod usb_telem;
 
 #[cfg(feature = "defmt")]
 use {defmt_rtt as _, panic_probe as _};
@@ -36,10 +37,11 @@ impl InjectedTrigger<ADC1> for Tim1Trgo2 {
 
 bind_interrupts!( struct Irqs {
     ADC1_2 => current_sense::CurrentSenseIrq;
+    USB_LP => embassy_stm32::usb::InterruptHandler<embassy_stm32::peripherals::USB>;
 });
 
 #[embassy_executor::main]
-async fn main(_spawner: Spawner) {
+async fn main(spawner: Spawner) {
     let mut config = embassy_stm32::Config::default();
     {
         use embassy_stm32::rcc::*;
@@ -62,6 +64,9 @@ async fn main(_spawner: Spawner) {
         config.rcc.mux.clk48sel = mux::Clk48sel::HSI48;
     }
     let p = embassy_stm32::init(config);
+
+    //USB
+    usb_telem::init(spawner, p.USB, Irqs, p.PA12, p.PA11);
 
     //ADC
     let mut adc_config = AdcConfig::default();

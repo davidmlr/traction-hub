@@ -3,9 +3,8 @@ use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Telemetry {
-    timestamp_ms: u64,
-    ia_a: f32,
-    ic_a: f32,
+    val_1: u16,
+    val_2: u16,
 }
 
 fn main() {
@@ -24,12 +23,13 @@ fn main() {
         match port.read(&mut read_buf) {
             Ok(n) => {
                 buf.extend_from_slice(&read_buf[..n]);
-                match postcard::from_bytes::<Telemetry>(&mut read_buf[..n]) {
-                    Ok(t) => println!(
-                        "t={:>8}ms Ia={:+.3}mA Ic={:+.3}mA",
-                        t.timestamp_ms, t.ia_a, t.ic_a
-                    ),
-                    Err(e) => eprintln!("decode error: {e}"),
+                while let Some(end) = buf.iter().position(|&b| b == 0) {
+                    let mut frame: Vec<u8> = buf.drain(..=end).collect();
+
+                    match postcard::from_bytes_cobs::<Telemetry>(&mut frame) {
+                        Ok(t) => println!("val_1={} val_2={}", t.val_1, t.val_2),
+                        Err(e) => eprintln!("decode error: {e}"),
+                    }
                 }
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {}
@@ -44,7 +44,7 @@ fn find_port() -> Option<String> {
     // Try to find by VID/PID
     for p in &ports {
         if let serialport::SerialPortType::UsbPort(info) = &p.port_type {
-            if info.vid == 0xc0de && info.pid == 0xcafe {
+            if info.vid == 0xdead && info.pid == 0xbeef {
                 return Some(p.port_name.clone());
             }
         }
