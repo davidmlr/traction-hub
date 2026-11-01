@@ -74,20 +74,24 @@ struct TestTelemetry {
 
 #[embassy_executor::task]
 async fn tx_task(mut class: CdcAcmClass<'static, UsbDriver>) {
-    class.wait_connection().await;
     let mut buf = [0; 64];
     let mut counter: u16 = 0;
     loop {
-        let msg = to_slice_cobs(
-            &TestTelemetry {
-                val_1: counter,
-                val_2: 1232,
-            },
-            &mut buf,
-        )
-        .unwrap();
-        class.write_packet(msg).await.unwrap();
-        counter += 1;
-        Timer::after_millis(100).await;
+        class.wait_connection().await;
+        loop {
+            let msg = to_slice_cobs(
+                &TestTelemetry {
+                    val_1: counter,
+                    val_2: 1232,
+                },
+                &mut buf,
+            )
+            .unwrap();
+            if class.write_packet(msg).await.is_err() {
+                break;
+            };
+            counter += 1;
+            Timer::after_millis(100).await;
+        }
     }
 }
