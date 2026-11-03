@@ -3,15 +3,12 @@
 
 mod fmt;
 
-#[cfg(not(feature = "defmt"))]
-use panic_halt as _;
-
 mod current_sense;
 mod stream;
 mod usb_telem;
 
 #[cfg(feature = "defmt")]
-use {defmt_rtt as _, panic_probe as _};
+use defmt_rtt as _;
 
 use core::sync::atomic::{AtomicU8, Ordering};
 
@@ -20,6 +17,7 @@ use embassy_stm32::{
     adc::{Adc, AdcChannel, AdcConfig, InjectedTrigger, Resolution, SampleTime},
     bind_interrupts,
     gpio::{Level, Output, OutputType, Speed},
+    pac,
     peripherals::ADC1,
     time::khz,
     timer::{
@@ -48,6 +46,8 @@ bind_interrupts!( struct Irqs {
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
+    // Stop TIM1 and disable outputs when core is halted by debugger
+    pac::DBGMCU.apb2fzr().modify(|w| w.set_tim1(true));
     let mut config = embassy_stm32::Config::default();
     {
         use embassy_stm32::rcc::*;
@@ -177,4 +177,15 @@ async fn main(spawner: Spawner) {
             period_us -= 5;
         }
     }
+}
+
+#[panic_handler]
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    // Power Stage off
+    pac::TIM1.bdtr().modify(|w| w.set_moe(false));
+    // Disable gate driver (drive PA15 low)
+    pac::GPIOA.bsrr().write(|w| w.set_br(15, true));
+    #[cfg(feature = "defmt")]
+    defmt::error!("{}", defmt::Display2Format(info));
+    cortex_m::asm::udf()
 }
