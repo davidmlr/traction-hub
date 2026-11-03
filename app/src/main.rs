@@ -7,6 +7,7 @@ mod fmt;
 use panic_halt as _;
 
 mod current_sense;
+mod stream;
 mod usb_telem;
 
 #[cfg(feature = "defmt")]

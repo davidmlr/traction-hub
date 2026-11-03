@@ -7,19 +7,41 @@ const VREFINT_MV: f32 = 1210.0;
 const AMP_GAIN: f32 = 10.0;
 const SHUNT_OHM: f32 = 0.001;
 
+pub const BLOCK_LEN: usize = 32;
+
 /// Messages from the device to the host.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum DeviceMsg {
     Calibration(Calibration),
-    Telemetry(Telemetry),
+    CurrentSamples(SampleBlock),
 }
 
-/// Raw ADC values, convert with [`Calibration::to_amps`].
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-pub struct Telemetry {
+pub struct Sample {
     pub i_a: u16,
     pub i_c: u16,
     pub step: u8,
+}
+
+impl Sample {
+    pub const fn new(i_a: u16, i_c: u16, step: u8) -> Self {
+        Sample { i_a, i_c, step }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct SampleBlock {
+    pub seq: u32,
+    pub samples: [Sample; BLOCK_LEN],
+}
+
+impl SampleBlock {
+    pub const fn new() -> Self {
+        Self {
+            seq: 0,
+            samples: [Sample::new(0, 0, 0); BLOCK_LEN],
+        }
+    }
 }
 
 /// Raw ADC values measured at startup with the power stage off.

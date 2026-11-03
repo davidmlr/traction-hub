@@ -1,5 +1,6 @@
 use core::sync::atomic::{AtomicU32, Ordering};
 
+use crate::STEP;
 use embassy_stm32::{
     interrupt::{
         self,
@@ -9,6 +10,9 @@ use embassy_stm32::{
 };
 use embassy_time::Timer;
 use protocol::Calibration;
+use protocol::Sample;
+
+use crate::stream::record;
 
 pub struct CurrentSenseIrq;
 
@@ -21,6 +25,8 @@ impl Handler<interrupt::typelevel::ADC1_2> for CurrentSenseIrq {
 
         let i_a = adc.jdr(0).read().jdata();
         let i_c = adc.jdr(1).read().jdata();
+
+        record(Sample::new(i_a, i_c, STEP.load(Ordering::Relaxed)));
 
         LATEST.store(((i_a as u32) << 16) | i_c as u32, Ordering::Relaxed);
 

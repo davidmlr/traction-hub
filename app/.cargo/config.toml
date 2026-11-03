@@ -5,7 +5,8 @@ runner = 'probe-rs run --chip STM32G431CBTx'
 target = "thumbv7em-none-eabi"
 
 [env]
-DEFMT_LOG = "trace"
+DEFMT_LOG = "info"
+#DEFMT_LOG = "trace"
 
 [unstable]
 build-std = ["core"]

@@ -1,5 +1,6 @@
 use core::sync::atomic::Ordering;
 
+use defmt::info;
 use embassy_executor::Spawner;
 use embassy_stm32::{
     interrupt::typelevel::Binding,
@@ -7,6 +8,7 @@ use embassy_stm32::{
     usb::{self, DmPin, DpPin, Driver, Instance},
     Peri,
 };
+use embassy_sync::channel::Channel;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 use embassy_time::Timer;
 use embassy_usb::{
@@ -17,8 +19,10 @@ use embassy_usb::{
 use static_cell::StaticCell;
 
 use postcard::to_slice_cobs;
-use protocol::{Calibration, DeviceMsg, Telemetry};
+use protocol::{Calibration, DeviceMsg, Sample, SampleBlock};
 
+use crate::stream;
+use crate::stream::next;
 use crate::{current_sense, STEP};
 
 static CALIBRATION: Signal<CriticalSectionRawMutex, Calibration> = Signal::new();
@@ -82,20 +86,28 @@ async fn tx_task(mut class: CdcAcmClass<'static, UsbDriver>) {
     loop {
         class.wait_connection().await;
         // Every new host needs the calibration first
+
+        while !class.dtr() {
+            Timer::after_millis(10).await;
+        }
+        stream::clear(); // drop stale blocks from before the connect
         if send(&mut class, &DeviceMsg::Calibration(cal))
             .await
             .is_err()
         {
             continue;
         }
+
         loop {
-            let (i_a, i_c) = current_sense::latest();
-            let step = STEP.load(Ordering::Relaxed);
-            let msg = DeviceMsg::Telemetry(Telemetry { i_a, i_c, step });
-            if send(&mut class, &msg).await.is_err() {
+            if !class.dtr() {
                 break;
             }
-            Timer::after_millis(100).await;
+            let sample = next().await;
+            let msg = DeviceMsg::CurrentSamples(sample);
+            if send(&mut class, &msg).await.is_err() {
+                info!("error");
+                break;
+            }
         }
     }
 }
@@ -104,7 +116,10 @@ async fn send(
     class: &mut CdcAcmClass<'static, UsbDriver>,
     msg: &DeviceMsg,
 ) -> Result<(), EndpointError> {
-    let mut buf = [0; 64];
+    let mut buf = [0; 256];
     let frame = to_slice_cobs(msg, &mut buf).unwrap();
-    class.write_packet(frame).await
+    for chunk in frame.chunks(64) {
+        class.write_packet(chunk).await?;
+    }
+    Ok(())
 }
