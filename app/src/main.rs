@@ -3,6 +3,7 @@
 
 mod fmt;
 
+mod commutation;
 mod current_sense;
 mod stream;
 mod usb_telem;
@@ -121,11 +122,14 @@ async fn main(spawner: Spawner) {
     pwm.set_duty(Channel::Ch4, max - 1);
     pwm.set_mms2(Mms2::COMPARE_OC4);
 
+    // Same duty on all phases, the role is set by commutation::commutate()
     let duty = max / 10;
+    pwm.set_duty(Channel::Ch1, duty);
+    pwm.set_duty(Channel::Ch2, duty);
+    pwm.set_duty(Channel::Ch3, duty);
 
-    pwm.disable(Channel::Ch1);
-    pwm.disable(Channel::Ch2);
-    pwm.disable(Channel::Ch3);
+    commutation::init();
+    commutation::all_off();
 
     Timer::after_millis(100).await;
 
@@ -145,21 +149,7 @@ async fn main(spawner: Spawner) {
     let mut log_div: u32 = 0;
 
     loop {
-        //(Quelle = +V/PWM, Senke = GND/statisch, floatend)   A=Ch1  B=Ch2  C=Ch3
-        let (src, sink, flt) = match step {
-            1 => (Channel::Ch1, Channel::Ch3, Channel::Ch2), // A→C
-            2 => (Channel::Ch1, Channel::Ch2, Channel::Ch3), // A→B
-            3 => (Channel::Ch3, Channel::Ch2, Channel::Ch1), // C→B
-            4 => (Channel::Ch3, Channel::Ch1, Channel::Ch2), // C→A
-            5 => (Channel::Ch2, Channel::Ch1, Channel::Ch3), // B→A
-            _ => (Channel::Ch2, Channel::Ch3, Channel::Ch1), // B→C
-        };
-
-        pwm.disable(flt); // beide FETs aus → Phase floatet
-        pwm.set_duty(sink, 0); // Duty 0 → Low-Side dauerhaft an
-        pwm.enable(sink);
-        pwm.set_duty(src, duty); // High-Side choppt, Low-Side = Komplement
-        pwm.enable(src);
+        commutation::commutate(step);
         STEP.store(step, Ordering::Relaxed);
 
         log_div += 1;
