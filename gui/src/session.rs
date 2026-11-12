@@ -1,7 +1,8 @@
 use eframe::egui;
-use protocol::{BLOCK_LEN, Calibration, SampleBlock};
+use protocol::{BLOCK_LEN, Calibration};
 
 use crate::link::{Link, LinkEvent};
+use crate::scope::Scope;
 
 pub struct Session {
     link: Link,
@@ -9,7 +10,7 @@ pub struct Session {
     closed: Option<String>,
     calibration: Option<Calibration>,
     stats: Option<(f32, u64)>,
-    last_block: Option<SampleBlock>,
+    scope: Scope,
 }
 
 impl Session {
@@ -20,7 +21,7 @@ impl Session {
             closed: None,
             calibration: None,
             stats: None,
-            last_block: None,
+            scope: Scope::new(),
         }
     }
 
@@ -31,7 +32,7 @@ impl Session {
                 LinkEvent::Connected => self.connected = true,
                 LinkEvent::Disconnected(reason) => self.closed = Some(reason),
                 LinkEvent::Calibration(c) => self.calibration = Some(c),
-                LinkEvent::Samples(block) => self.last_block = Some(block),
+                LinkEvent::Samples(block) => self.scope.push(&block),
                 LinkEvent::Stats { blocks_per_s, lost } => self.stats = Some((blocks_per_s, lost)),
             }
         }
@@ -48,16 +49,6 @@ impl Session {
             return;
         }
 
-        match &self.calibration {
-            Some(c) => {
-                let (bias_a, bias_c) = c.bias_mv();
-                ui.label(format!("Bias: A {bias_a:.1} mV, C {bias_c:.1} mV"));
-            }
-            None => {
-                ui.label("No calibration received yet (reset the board)");
-            }
-        }
-
         if let Some((rate, lost)) = self.stats {
             ui.label(format!(
                 "{rate:.0} blocks/s | {:.0} samples/s | lost blocks: {lost}",
@@ -65,14 +56,16 @@ impl Session {
             ));
         }
 
-        if let (Some(c), Some(block)) = (&self.calibration, &self.last_block) {
-            let s = block.samples[BLOCK_LEN - 1];
-            let (i_a, i_c) = c.to_amps(s.i_a, s.i_c);
-            ui.label(format!(
-                "Step {} | I_a {i_a:.2} A | I_b {:.2} A | I_c {i_c:.2} A",
-                s.step,
-                -(i_a + i_c)
-            ));
+        match &self.calibration {
+            Some(c) => {
+                let (bias_a, bias_c) = c.bias_mv();
+                ui.label(format!("Bias: A {bias_a:.1} mV, C {bias_c:.1} mV"));
+                ui.separator();
+                self.scope.ui(ui, c);
+            }
+            None => {
+                ui.label("No calibration received yet (reset the board)");
+            }
         }
     }
 }

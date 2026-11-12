@@ -5,6 +5,7 @@ use crate::app::TractUi;
 mod app;
 mod discovery;
 mod link;
+mod scope;
 mod session;
 
 fn main() {

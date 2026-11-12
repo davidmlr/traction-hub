@@ -9,3 +9,4 @@ serialport = "4"
 eframe = { version = "0.37.0", features = ["default"]}
 env_logger = { version = "0.11.11", features = ["auto-color", "humantime"]}
 protocol = { path = "../protocol" }
+egui_plot = "0.38.0"
