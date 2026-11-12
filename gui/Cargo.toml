@@ -6,4 +6,6 @@ edition = "2024"
 [dependencies]
 postcard = { version = "1", features = ["use-std"] }
 serialport = "4"
+eframe = { version = "0.37.0", features = ["default"]}
+env_logger = { version = "0.11.11", features = ["auto-color", "humantime"]}
 protocol = { path = "../protocol" }
