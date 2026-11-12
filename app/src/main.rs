@@ -5,13 +5,14 @@ mod fmt;
 
 mod commutation;
 mod current_sense;
+mod motor;
 mod stream;
 mod usb_telem;
 
 #[cfg(feature = "defmt")]
 use defmt_rtt as _;
 
-use core::sync::atomic::{AtomicU8, Ordering};
+use core::sync::atomic::Ordering::Relaxed;
 
 use embassy_executor::Spawner;
 use embassy_stm32::{
@@ -36,9 +37,6 @@ impl InjectedTrigger<ADC1> for Tim1Trgo2 {
         8
     }
 }
-
-/// Current commutation step (1..=6), 0 while stopped.
-pub static STEP: AtomicU8 = AtomicU8::new(0);
 
 bind_interrupts!( struct Irqs {
     ADC1_2 => current_sense::CurrentSenseIrq;
@@ -144,28 +142,14 @@ async fn main(spawner: Spawner) {
     let (bias_a_mv, bias_c_mv) = cal.bias_mv();
     info!("bias_a: {} mV | bias_c: {} mV", bias_a_mv, bias_c_mv);
 
-    let mut step: u8 = 1;
-    let mut period_us: u64 = 6000;
-    let mut log_div: u32 = 0;
+    motor::CMD_PERIOD_US.store(1000, Relaxed);
+    motor::CMD_RUN.store(true, Relaxed);
 
     loop {
-        commutation::commutate(step);
-        STEP.store(step, Ordering::Relaxed);
-
-        log_div += 1;
-        if log_div >= 50 {
-            log_div = 0;
-            let (raw_a, raw_c) = current_sense::latest();
-            let (i_a, i_c) = cal.to_amps(raw_a, raw_c);
-            info!("step {} | i_a: {} A | i_c: {} A", step, i_a, i_c);
-        }
-
-        Timer::after_micros(period_us).await;
-
-        step = if step >= 6 { 1 } else { step + 1 };
-        if period_us > 1000 {
-            period_us -= 5;
-        }
+        Timer::after_millis(500).await;
+        let (raw_a, raw_c) = current_sense::latest();
+        let (i_a, i_c) = cal.to_amps(raw_a, raw_c);
+        info!("i_a: {} A | i_c: {} A", i_a, i_c);
     }
 }
 

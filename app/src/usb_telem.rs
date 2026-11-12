@@ -1,5 +1,3 @@
-use core::sync::atomic::Ordering;
-
 use defmt::info;
 use embassy_executor::Spawner;
 use embassy_stm32::{
@@ -8,7 +6,6 @@ use embassy_stm32::{
     usb::{self, DmPin, DpPin, Driver, Instance},
     Peri,
 };
-use embassy_sync::channel::Channel;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 use embassy_time::Timer;
 use embassy_usb::{
@@ -19,11 +16,10 @@ use embassy_usb::{
 use static_cell::StaticCell;
 
 use postcard::to_slice_cobs;
-use protocol::{Calibration, DeviceMsg, Sample, SampleBlock};
+use protocol::{Calibration, DeviceMsg};
 
 use crate::stream;
 use crate::stream::next;
-use crate::{current_sense, STEP};
 
 static CALIBRATION: Signal<CriticalSectionRawMutex, Calibration> = Signal::new();
 
