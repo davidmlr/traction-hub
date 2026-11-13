@@ -5,6 +5,7 @@ mod fmt;
 
 mod commutation;
 mod current_sense;
+mod fault;
 mod motor;
 mod stream;
 mod usb_telem;
@@ -63,7 +64,9 @@ async fn main(spawner: Spawner) {
             divq: None,
             divr: Some(PllRDiv::DIV2), // 160 MHz / 2 = 80 MHz SYSCLK
         });
+        // 150/170 MHz fault with the motor running, likely supply/ground noise
         config.rcc.sys = Sysclk::PLL1_R;
+        // Adc::new divides this down to <= 60 MHz
         config.rcc.mux.adc12sel = mux::Adcsel::SYS;
         config.rcc.hsi48 = Some(Default::default());
         config.rcc.mux.clk48sel = mux::Clk48sel::HSI48;
@@ -151,15 +154,4 @@ async fn main(spawner: Spawner) {
         let (i_a, i_c) = cal.to_amps(raw_a, raw_c);
         info!("i_a: {} A | i_c: {} A", i_a, i_c);
     }
-}
-
-#[panic_handler]
-fn panic(info: &core::panic::PanicInfo) -> ! {
-    // Power Stage off
-    pac::TIM1.bdtr().modify(|w| w.set_moe(false));
-    // Disable gate driver (drive PA15 low)
-    pac::GPIOA.bsrr().write(|w| w.set_br(15, true));
-    #[cfg(feature = "defmt")]
-    defmt::error!("{}", defmt::Display2Format(info));
-    cortex_m::asm::udf()
 }

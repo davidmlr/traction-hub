@@ -1,5 +1,6 @@
 [target.thumbv7em-none-eabi]
-runner = 'probe-rs run --chip STM32G431CBTx'
+# no-catch-hardfault: let our HardFault handler run and report
+runner = 'probe-rs run --chip STM32G431CBTx --no-catch-hardfault'
 
 [build]
 target = "thumbv7em-none-eabi"
