@@ -31,6 +31,7 @@ pub fn set_calibration(cal: Calibration) {
 
 pub fn init(
     spawner: Spawner,
+    blocks: stream::BlockReceiver,
     usb: Peri<'static, USB>,
     irq: impl Binding<<USB as Instance>::Interrupt, usb::InterruptHandler<USB>> + 'static,
     dp: Peri<'static, impl DpPin<USB>>,
@@ -71,7 +72,7 @@ pub fn init(
     let usb = builder.build();
 
     spawner.spawn(usb_task(usb).unwrap());
-    spawner.spawn(tx_task(sender).unwrap());
+    spawner.spawn(tx_task(sender, blocks).unwrap());
     spawner.spawn(rx_task(receiver).unwrap());
     spawner.spawn(dtr_task(control).unwrap());
 }
@@ -116,14 +117,14 @@ async fn dtr_task(control: ControlChanged<'static>) -> ! {
 }
 
 #[embassy_executor::task]
-async fn tx_task(mut sender: Sender<'static, UsbDriver>) {
+async fn tx_task(mut sender: Sender<'static, UsbDriver>, mut blocks: stream::BlockReceiver) {
     let cal = CALIBRATION.wait().await;
     loop {
         sender.wait_connection().await;
         while !sender.dtr() {
             embassy_time::Timer::after_millis(10).await;
         }
-        stream::clear(); // drop stale blocks from before the connect
+        blocks.clear(); // drop stale blocks from before the connect
 
         // Every new host needs the calibration first
         if send(&mut sender, &DeviceMsg::Calibration(cal)).await.is_err() {
@@ -132,8 +133,13 @@ async fn tx_task(mut sender: Sender<'static, UsbDriver>) {
 
         let mut status_ticker = Ticker::every(Duration::from_millis(100));
         while sender.dtr() {
-            let msg = match select(stream::next(), status_ticker.next()).await {
-                Either::First(block) => DeviceMsg::CurrentSamples(block),
+            let msg = match select(blocks.receive(), status_ticker.next()).await {
+                Either::First(block) => {
+                    // Copy in task context, then hand the slot back to the ISR
+                    let msg = DeviceMsg::CurrentSamples(*block);
+                    blocks.receive_done();
+                    msg
+                }
                 Either::Second(()) => DeviceMsg::Status(motor::status()),
             };
             if send(&mut sender, &msg).await.is_err() {

@@ -72,7 +72,9 @@ async fn main(spawner: Spawner) {
     let p = embassy_stm32::init(config);
 
     //USB
-    usb_telem::init(spawner, p.USB, Irqs, p.PA12, p.PA11);
+    // Before the ADC interrupt is enabled, which writes into the stream
+    let blocks = stream::init();
+    usb_telem::init(spawner, blocks, p.USB, Irqs, p.PA12, p.PA11);
 
     //ADC
     let mut adc_config = AdcConfig::default();
