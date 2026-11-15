@@ -13,9 +13,20 @@ const HISTORY_LEN: usize = 20_000;
 const UNTRIGGERED_LEN: usize = 1_000;
 const TRIGGER_STEP: u8 = 1;
 
+// Time budget of the ISR: one PWM period
+const ISR_BUDGET_US: f32 = 50.0;
+
+/// A sample with the ISR timing of the block it came in.
+#[derive(Clone, Copy)]
+struct Point {
+    sample: Sample,
+    isr_run_us: f32,
+    isr_end_us: f32,
+}
+
 /// Oscilloscope-like view of the phase currents, triggered on the start of an electrical period.
 pub struct Scope {
-    history: VecDeque<Sample>,
+    history: VecDeque<Point>,
     periods: usize,
     running: bool,
 }
@@ -33,7 +44,13 @@ impl Scope {
         if !self.running {
             return;
         }
-        self.history.extend(block.samples.iter().copied());
+        let isr_run_us = block.isr_run_max_ns() / 1000.0;
+        let isr_end_us = block.isr_end_max_ns() / 1000.0;
+        self.history.extend(block.samples.iter().map(|&sample| Point {
+            sample,
+            isr_run_us,
+            isr_end_us,
+        }));
         let excess = self.history.len().saturating_sub(HISTORY_LEN);
         self.history.drain(..excess);
     }
@@ -42,7 +59,7 @@ impl Scope {
     fn triggered_window(&self) -> Option<Range<usize>> {
         let h = &self.history;
         let triggers: Vec<usize> = (1..h.len())
-            .filter(|&i| h[i].step == TRIGGER_STEP && h[i - 1].step != TRIGGER_STEP)
+            .filter(|&i| h[i].sample.step == TRIGGER_STEP && h[i - 1].sample.step != TRIGGER_STEP)
             .collect();
         let end = *triggers.last()?;
         let start = *triggers.iter().rev().nth(self.periods)?;
@@ -70,21 +87,34 @@ impl Scope {
         let mut i_b = Vec::with_capacity(window.len());
         let mut i_c = Vec::with_capacity(window.len());
         let mut step = Vec::with_capacity(window.len());
-        for (n, s) in self.history.range(window).enumerate() {
+        let mut isr_run = Vec::with_capacity(window.len());
+        let mut isr_end = Vec::with_capacity(window.len());
+        let (mut run_max, mut end_max) = (0.0f32, 0.0f32);
+        for (n, p) in self.history.range(window).enumerate() {
             let t = n as f64 * SAMPLE_PERIOD_MS;
+            let s = p.sample;
             let (a, c) = cal.to_amps(s.i_a, s.i_c);
             i_a.push([t, a as f64]);
             i_b.push([t, -(a + c) as f64]);
             i_c.push([t, c as f64]);
             step.push([t, s.step as f64]);
+            isr_run.push([t, p.isr_run_us as f64]);
+            isr_end.push([t, p.isr_end_us as f64]);
+            run_max = run_max.max(p.isr_run_us);
+            end_max = end_max.max(p.isr_end_us);
         }
+
+        ui.label(format!(
+            "ISR max in view: run {run_max:.2} µs | end {end_max:.2} µs ({:.0} % of {ISR_BUDGET_US:.0} µs)",
+            end_max / ISR_BUDGET_US * 100.0
+        ));
 
         let link = egui::Id::unique("scope_x");
         let running = self.running;
         let height = ui.available_height();
 
         Plot::new("currents")
-            .height(height * 0.75)
+            .height(height * 0.6)
             .legend(Legend::default())
             .y_axis_label("A")
             .link_axis(link, [true, false])
@@ -96,6 +126,21 @@ impl Scope {
                 p.line(Line::new("I_a", PlotPoints::from(i_a)));
                 p.line(Line::new("I_b", PlotPoints::from(i_b)));
                 p.line(Line::new("I_c", PlotPoints::from(i_c)));
+            });
+
+        Plot::new("isr")
+            .height(height * 0.2)
+            .legend(Legend::default())
+            .y_axis_label("ISR µs")
+            .include_y(0.0)
+            .link_axis(link, [true, false])
+            .link_cursor(link, [true, false])
+            .show(ui, |p| {
+                if running {
+                    p.set_auto_bounds(true);
+                }
+                p.line(Line::new("run", PlotPoints::from(isr_run)));
+                p.line(Line::new("end", PlotPoints::from(isr_end)));
             });
 
         Plot::new("step")

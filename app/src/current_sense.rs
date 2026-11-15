@@ -5,33 +5,50 @@ use embassy_stm32::{
         self,
         typelevel::{self, Binding, Handler, Interrupt},
     },
-    pac,
+    pac::{self, timer::vals::Dir},
 };
 use embassy_time::Timer;
 use protocol::Calibration;
 use protocol::Sample;
 
-use crate::stream::record;
+use crate::stream;
 
 pub struct CurrentSenseIrq;
 
 // Phase A in upper 16 bits, phase C in lower 16 bits, so both come from the same sample
 static LATEST: AtomicU32 = AtomicU32::new(0);
 
+/// TIM1 ticks since the counter's top, where the ADC is triggered.
+/// Valid for up to one PWM period.
+fn ticks_since_top() -> u32 {
+    let tim = pac::TIM1;
+    let arr = tim.arr().read().arr() as u32;
+    let cnt = tim.cnt().read().cnt() as u32;
+    match tim.cr1().read().dir() {
+        Dir::DOWN => arr - cnt,
+        Dir::UP => arr + cnt,
+    }
+}
+
 impl Handler<interrupt::typelevel::ADC1_2> for CurrentSenseIrq {
     unsafe fn on_interrupt() {
+        let entry = ticks_since_top();
         let adc = pac::ADC1;
 
         let i_a = adc.jdr(0).read().jdata();
         let i_c = adc.jdr(1).read().jdata();
 
         let step = crate::motor::on_pwm_tick();
-        record(Sample::new(i_a, i_c, step));
+        stream::record(Sample::new(i_a, i_c, step));
 
         LATEST.store(((i_a as u32) << 16) | i_c as u32, Ordering::Relaxed);
 
         // write, not modify: ISR flags are write-1-to-clear
         adc.isr().write(|w| w.set_jeos(true));
+
+        let exit = ticks_since_top();
+        // saturating: an ISR delayed past one PWM period wraps the counter
+        stream::record_isr_time(exit.saturating_sub(entry), exit);
     }
 }
 

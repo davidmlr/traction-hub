@@ -146,9 +146,9 @@ async fn main(spawner: Spawner) {
     // Motor starts on HostMsg::Start
 
     loop {
-        Timer::after_millis(500).await;
-        let (raw_a, raw_c) = current_sense::latest();
-        let (i_a, i_c) = cal.to_amps(raw_a, raw_c);
-        info!("i_a: {} A | i_c: {} A", i_a, i_c);
+        Timer::after_millis(5000).await;
+        //let (raw_a, raw_c) = current_sense::latest();
+        //let (i_a, i_c) = cal.to_amps(raw_a, raw_c);
+        //info!("i_a: {} A | i_c: {} A", i_a, i_c);
     }
 }
