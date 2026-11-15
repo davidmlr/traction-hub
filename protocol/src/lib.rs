@@ -8,12 +8,32 @@ const AMP_GAIN: f32 = 10.0;
 const SHUNT_OHM: f32 = 0.001;
 
 pub const BLOCK_LEN: usize = 32;
+/// Duration of one TIM1 tick (80 MHz)
+pub const TIM1_TICK_NS: f32 = 12.5;
 
 /// Messages from the device to the host.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum DeviceMsg {
     Calibration(Calibration),
     CurrentSamples(SampleBlock),
+    Status(Status),
+}
+
+/// Messages from the host to the device.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub enum HostMsg {
+    Start,
+    Stop,
+    /// Target time per commutation step in µs
+    SetPeriod(u32),
+}
+
+/// Slowly changing motor state, sent periodically.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct Status {
+    pub running: bool,
+    /// Current time per commutation step in µs (follows the target via a ramp)
+    pub period_us: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
@@ -32,6 +52,10 @@ impl Sample {
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct SampleBlock {
     pub seq: u32,
+    /// Longest ISR run time (entry to exit) within this block, TIM1 ticks
+    pub isr_run_max_ticks: u16,
+    /// Latest ISR end (ADC trigger to exit) within this block, TIM1 ticks
+    pub isr_end_max_ticks: u16,
     pub samples: [Sample; BLOCK_LEN],
 }
 
@@ -39,8 +63,18 @@ impl SampleBlock {
     pub const fn new() -> Self {
         Self {
             seq: 0,
+            isr_run_max_ticks: 0,
+            isr_end_max_ticks: 0,
             samples: [Sample::new(0, 0, 0); BLOCK_LEN],
         }
+    }
+
+    pub fn isr_run_max_ns(&self) -> f32 {
+        self.isr_run_max_ticks as f32 * TIM1_TICK_NS
+    }
+
+    pub fn isr_end_max_ns(&self) -> f32 {
+        self.isr_end_max_ticks as f32 * TIM1_TICK_NS
     }
 }
 

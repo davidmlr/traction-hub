@@ -4,13 +4,14 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use eframe::egui;
-use protocol::{Calibration, DeviceMsg, SampleBlock};
+use protocol::{Calibration, DeviceMsg, SampleBlock, Status};
 
 pub enum LinkEvent {
     Connected,
     Disconnected(String),
     Calibration(Calibration),
     Samples(SampleBlock),
+    Status(Status),
     Stats { blocks_per_s: f32, lost: u64 },
 }
 
@@ -66,6 +67,7 @@ fn run(port_name: &str, tx: &Sender<LinkEvent>, ctx: &egui::Context) -> String {
 
                     let ev = match postcard::from_bytes_cobs::<DeviceMsg>(&mut frame) {
                         Ok(DeviceMsg::Calibration(c)) => LinkEvent::Calibration(c),
+                        Ok(DeviceMsg::Status(st)) => LinkEvent::Status(st),
                         Ok(DeviceMsg::CurrentSamples(block)) => {
                             stats.track(block.seq);
                             LinkEvent::Samples(block)

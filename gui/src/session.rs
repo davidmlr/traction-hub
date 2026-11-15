@@ -1,5 +1,5 @@
 use eframe::egui;
-use protocol::{BLOCK_LEN, Calibration};
+use protocol::{BLOCK_LEN, Calibration, Status};
 
 use crate::link::{Link, LinkEvent};
 use crate::scope::Scope;
@@ -10,6 +10,7 @@ pub struct Session {
     closed: Option<String>,
     calibration: Option<Calibration>,
     stats: Option<(f32, u64)>,
+    status: Option<Status>,
     scope: Scope,
 }
 
@@ -21,6 +22,7 @@ impl Session {
             closed: None,
             calibration: None,
             stats: None,
+            status: None,
             scope: Scope::new(),
         }
     }
@@ -34,6 +36,7 @@ impl Session {
                 LinkEvent::Calibration(c) => self.calibration = Some(c),
                 LinkEvent::Samples(block) => self.scope.push(&block),
                 LinkEvent::Stats { blocks_per_s, lost } => self.stats = Some((blocks_per_s, lost)),
+                LinkEvent::Status(st) => self.status = Some(st),
             }
         }
     }
@@ -54,6 +57,11 @@ impl Session {
                 "{rate:.0} blocks/s | {:.0} samples/s | lost blocks: {lost}",
                 rate * BLOCK_LEN as f32
             ));
+        }
+
+        if let Some(st) = self.status {
+            let state = if st.running { "running" } else { "stopped" };
+            ui.label(format!("Motor {state} | {} µs/step", st.period_us));
         }
 
         match &self.calibration {
