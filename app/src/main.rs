@@ -13,8 +13,6 @@ mod usb_telem;
 #[cfg(feature = "defmt")]
 use defmt_rtt as _;
 
-use core::sync::atomic::Ordering::Relaxed;
-
 use embassy_executor::Spawner;
 use embassy_stm32::{
     adc::{Adc, AdcChannel, AdcConfig, InjectedTrigger, Resolution, SampleTime},
@@ -145,8 +143,7 @@ async fn main(spawner: Spawner) {
     let (bias_a_mv, bias_c_mv) = cal.bias_mv();
     info!("bias_a: {} mV | bias_c: {} mV", bias_a_mv, bias_c_mv);
 
-    motor::CMD_PERIOD_US.store(1000, Relaxed);
-    motor::CMD_RUN.store(true, Relaxed);
+    // Motor starts on HostMsg::Start
 
     loop {
         Timer::after_millis(500).await;

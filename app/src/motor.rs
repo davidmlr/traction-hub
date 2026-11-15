@@ -6,6 +6,8 @@ use core::sync::atomic::{AtomicBool, AtomicU32, Ordering::Relaxed};
 
 use embassy_sync::blocking_mutex::{raw::CriticalSectionRawMutex, Mutex};
 
+use protocol::{Status, PERIOD_US_MAX, PERIOD_US_MIN};
+
 use crate::commutation;
 
 pub static CMD_RUN: AtomicBool = AtomicBool::new(false);
@@ -13,8 +15,20 @@ pub static CMD_RUN: AtomicBool = AtomicBool::new(false);
 pub static CMD_PERIOD_US: AtomicU32 = AtomicU32::new(1000);
 
 const TICK_US: u32 = 50;
-const START_PERIOD_US: u32 = 6000;
+const START_PERIOD_US: u32 = PERIOD_US_MAX;
 const RAMP_US_PER_STEP: u32 = 5;
+pub fn start() {
+    CMD_RUN.store(true, Relaxed);
+}
+
+pub fn stop() {
+    CMD_RUN.store(false, Relaxed);
+}
+
+/// Sets the target step period, clamped to the supported range.
+pub fn set_period(us: u32) {
+    CMD_PERIOD_US.store(us.clamp(PERIOD_US_MIN, PERIOD_US_MAX), Relaxed);
+}
 
 static MOTOR: Mutex<CriticalSectionRawMutex, RefCell<Motor>> =
     Mutex::new(RefCell::new(Motor::new()));
@@ -76,4 +90,15 @@ impl Motor {
 /// Called once per PWM period from the ADC ISR. Returns the current step (0 = stopped).
 pub fn on_pwm_tick() -> u8 {
     MOTOR.lock(|m| m.borrow_mut().tick())
+}
+
+/// Actual motor state as seen by the ISR.
+pub fn status() -> Status {
+    MOTOR.lock(|m| {
+        let m = m.borrow();
+        Status {
+            running: m.running,
+            period_us: m.period_us,
+        }
+    })
 }
