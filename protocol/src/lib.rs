@@ -10,6 +10,9 @@ const SHUNT_OHM: f32 = 0.001;
 pub const BLOCK_LEN: usize = 32;
 /// Duration of one TIM1 tick (80 MHz)
 pub const TIM1_TICK_NS: f32 = 12.5;
+/// Supported range for HostMsg::SetPeriod in µs per commutation step
+pub const PERIOD_US_MIN: u32 = 500;
+pub const PERIOD_US_MAX: u32 = 6000;
 
 /// Messages from the device to the host.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]

@@ -1,10 +1,10 @@
-use std::io::{ErrorKind, Read};
+use std::io::{ErrorKind, Read, Write};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use eframe::egui;
-use protocol::{Calibration, DeviceMsg, SampleBlock, Status};
+use protocol::{Calibration, DeviceMsg, HostMsg, SampleBlock, Status};
 
 pub enum LinkEvent {
     Connected,
@@ -18,22 +18,39 @@ pub enum LinkEvent {
 /// Handle to a link thread. Dropping it stops the thread and closes the port.
 pub struct Link {
     pub events: Receiver<LinkEvent>,
+    cmds: Sender<HostMsg>,
+}
+
+impl Link {
+    /// Queues a command for the device. Silently dropped if the link is closed.
+    pub fn send(&self, msg: HostMsg) {
+        let _ = self.cmds.send(msg);
+    }
 }
 
 pub fn spawn(port: String, ctx: egui::Context) -> Link {
     let (tx, rx) = mpsc::channel();
+    let (cmd_tx, cmd_rx) = mpsc::channel();
 
     thread::spawn(move || {
-        let reason = run(&port, &tx, &ctx);
+        let reason = run(&port, &tx, &cmd_rx, &ctx);
         let _ = tx.send(LinkEvent::Disconnected(reason));
         ctx.request_repaint();
     });
 
-    Link { events: rx }
+    Link {
+        events: rx,
+        cmds: cmd_tx,
+    }
 }
 
 /// Reads from the port until an error occurs or the Link is dropped.
-fn run(port_name: &str, tx: &Sender<LinkEvent>, ctx: &egui::Context) -> String {
+fn run(
+    port_name: &str,
+    tx: &Sender<LinkEvent>,
+    cmds: &Receiver<HostMsg>,
+    ctx: &egui::Context,
+) -> String {
     let mut port = match serialport::new(port_name, 115200)
         .timeout(Duration::from_millis(100))
         .open()
@@ -59,6 +76,13 @@ fn run(port_name: &str, tx: &Sender<LinkEvent>, ctx: &egui::Context) -> String {
     let mut stats = Stats::new();
 
     loop {
+        for msg in cmds.try_iter() {
+            let frame = postcard::to_stdvec_cobs(&msg).expect("HostMsg always serializes");
+            if let Err(e) = port.write_all(&frame) {
+                return format!("write failed: {e}");
+            }
+        }
+
         match port.read(&mut read_buf) {
             Ok(n) => {
                 buf.extend_from_slice(&read_buf[..n]);

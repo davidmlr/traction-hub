@@ -1,5 +1,5 @@
 use eframe::egui;
-use protocol::{BLOCK_LEN, Calibration, Status};
+use protocol::{BLOCK_LEN, Calibration, HostMsg, Status, PERIOD_US_MAX, PERIOD_US_MIN};
 
 use crate::link::{Link, LinkEvent};
 use crate::scope::Scope;
@@ -11,6 +11,8 @@ pub struct Session {
     calibration: Option<Calibration>,
     stats: Option<(f32, u64)>,
     status: Option<Status>,
+    /// Target period set with the slider
+    period_us: u32,
     scope: Scope,
 }
 
@@ -23,6 +25,7 @@ impl Session {
             calibration: None,
             stats: None,
             status: None,
+            period_us: PERIOD_US_MIN,
             scope: Scope::new(),
         }
     }
@@ -59,10 +62,8 @@ impl Session {
             ));
         }
 
-        if let Some(st) = self.status {
-            let state = if st.running { "running" } else { "stopped" };
-            ui.label(format!("Motor {state} | {} µs/step", st.period_us));
-        }
+        self.controls(ui);
+        ui.separator();
 
         match &self.calibration {
             Some(c) => {
@@ -73,6 +74,41 @@ impl Session {
             }
             None => {
                 ui.label("No calibration received yet (reset the board)");
+            }
+        }
+    }
+
+    fn controls(&mut self, ui: &mut egui::Ui) {
+        let running = self.status.is_some_and(|st| st.running);
+
+        ui.horizontal(|ui| {
+            if ui.add_enabled(!running, egui::Button::new("Start")).clicked() {
+                // Device may still have a period from an earlier session
+                self.link.send(HostMsg::SetPeriod(self.period_us));
+                self.link.send(HostMsg::Start);
+            }
+            if ui.add_enabled(running, egui::Button::new("Stop")).clicked() {
+                self.link.send(HostMsg::Stop);
+            }
+
+            let slider = egui::Slider::new(&mut self.period_us, PERIOD_US_MIN..=PERIOD_US_MAX)
+                .text("µs/step");
+            if ui.add(slider).changed() {
+                self.link.send(HostMsg::SetPeriod(self.period_us));
+            }
+        });
+
+        match self.status {
+            Some(st) if st.running => {
+                // Six steps per electrical revolution
+                let f_el = 1e6 / (6.0 * st.period_us as f32);
+                ui.label(format!("Running | {} µs/step | {f_el:.0} Hz electrical", st.period_us));
+            }
+            Some(_) => {
+                ui.label("Stopped");
+            }
+            None => {
+                ui.label("No status received yet");
             }
         }
     }
